@@ -7,6 +7,7 @@ import {
   doc,
   onSnapshot,
   serverTimestamp,
+  setDoc,
   updateDoc,
 } from 'firebase/firestore'
 import { db, COLECCION } from '../lib/firebase.js'
@@ -14,6 +15,20 @@ import { useAuth } from '../context/AuthContext.jsx'
 import Cargando from '../components/Cargando.jsx'
 import Modal from '../components/Modal.jsx'
 import FormularioInvitado from '../components/FormularioInvitado.jsx'
+import ConfigMenu from '../components/ConfigMenu.jsx'
+import {
+  COLECCION_CONFIG,
+  CONFIG_VACIA,
+  DOC_CONFIG,
+  eleccionDe,
+  faltaElegir,
+  hayMenuConfigurado,
+  leerConfig,
+  nombreOpcion,
+  personasDelGrupo,
+  platosPara,
+  resumenMenu,
+} from '../lib/menu.js'
 import {
   desglosePorCategoria,
   leerAcompanantes,
@@ -105,6 +120,7 @@ export default function Admin() {
   const [filtroGrupo, setFiltroGrupo] = useState('Todos')
   const [filtroConfirmacion, setFiltroConfirmacion] = useState('Todos')
   const [filtroCategoria, setFiltroCategoria] = useState('Todos')
+  const [filtroMenu, setFiltroMenu] = useState('Todos')
 
   // Estado de los diálogos.
   const [creando, setCreando] = useState(false)
@@ -114,6 +130,9 @@ export default function Admin() {
   const [guardando, setGuardando] = useState(false)
   const [textoBorrado, setTextoBorrado] = useState('')
   const [copiadoId, setCopiadoId] = useState(null)
+
+  const [config, setConfig] = useState(CONFIG_VACIA)
+  const [editandoMenu, setEditandoMenu] = useState(false)
 
   useEffect(() => {
     const unsub = onSnapshot(
@@ -130,6 +149,29 @@ export default function Admin() {
     )
     return unsub
   }, [])
+
+  // Configuración del menú, también en tiempo real.
+  useEffect(() => {
+    return onSnapshot(
+      doc(db, COLECCION_CONFIG, DOC_CONFIG),
+      (snap) => setConfig(snap.exists() ? leerConfig(snap.data()) : CONFIG_VACIA),
+      (e) => console.error('No se pudo leer la configuración del menú:', e)
+    )
+  }, [])
+
+  async function guardarMenu(datos) {
+    setGuardando(true)
+    setError('')
+    try {
+      await setDoc(doc(db, COLECCION_CONFIG, DOC_CONFIG), datos)
+      setEditandoMenu(false)
+    } catch (e) {
+      console.error(e)
+      setError('No se pudo guardar el menú. ¿Publicaste las reglas actualizadas?')
+    } finally {
+      setGuardando(false)
+    }
+  }
 
   // Los contadores cuentan PERSONAS, no documentos: un invitado con 3
   // acompañantes son 4 lugares en el banquete y 4 sillas.
@@ -176,9 +218,12 @@ export default function Admin() {
         return (i.confirmacion || 'Pendiente') === filtroConfirmacion
       })
       .filter((i) => filtroCategoria === 'Todos' || (i.categoria || 'Adulto') === filtroCategoria)
+      .filter((i) => filtroMenu !== 'faltan' || faltaElegir(i, config))
       .filter((i) => !q || normalizar(i.nombre).includes(q))
       .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
-  }, [invitados, busqueda, filtroGrupo, filtroConfirmacion, filtroCategoria])
+  }, [invitados, busqueda, filtroGrupo, filtroConfirmacion, filtroCategoria, filtroMenu, config])
+
+  const menu = useMemo(() => resumenMenu(invitados, config), [invitados, config])
 
   // ---------- Acciones ----------
 
@@ -265,6 +310,7 @@ export default function Admin() {
       'Acompanantes adultos',
       'Acompanantes ninos',
       'Nombres de acompanantes',
+      'Menu por persona',
       'Mesa',
       'Confirmacion',
       'Restricciones',
@@ -285,6 +331,17 @@ export default function Admin() {
         ac.adultos.length,
         ac.ninos.length,
         nombresAcompanantes(i).join(' / '),
+        // "Ana: Pollo + Tinto / Leo: Nuggets" — una linea por persona.
+        personasDelGrupo(i)
+          .filter((p) => p.tipo !== 'bebe')
+          .map((p) => {
+            const e = eleccionDe(i, p.indice)
+            const plato = nombreOpcion(e.plato, platosPara(p.tipo, config))
+            const bebida = nombreOpcion(e.bebida, config.bebidas)
+            const elegido = [plato, bebida].filter(Boolean).join(' + ')
+            return `${p.nombre}: ${elegido || 'sin elegir'}`
+          })
+          .join(' / '),
         i.mesa,
         i.confirmacion || 'Pendiente',
         i.restricciones,
@@ -324,6 +381,9 @@ export default function Admin() {
           <button onClick={() => setCreando(true)} className="btn-primario">
             + Agregar invitado
           </button>
+          <button onClick={() => setEditandoMenu(true)} className="btn-secundario">
+            Menú
+          </button>
           <Link to="/admin/scanner" className="btn-secundario">
             Escáner
           </Link>
@@ -361,6 +421,61 @@ export default function Admin() {
           Todo en personas. {resumen.grupos} grupos con link propio.
         </span>
       </section>
+
+      {/* Conteo de platos y bebidas, solo de quienes ya confirmaron. */}
+      {hayMenuConfigurado(config) && (
+        <section className="mt-3 rounded-2xl border border-arena bg-white px-5 py-4">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-sm font-medium">Menú elegido</h2>
+            {(menu.sinPlato > 0 || menu.sinBebida > 0) && (
+              <button
+                onClick={() => setFiltroMenu(filtroMenu === 'faltan' ? 'Todos' : 'faltan')}
+                className="text-xs text-oro underline"
+              >
+                {menu.sinPlato} sin plato elegido — {filtroMenu === 'faltan' ? 'ver todos' : 'ver quiénes'}
+              </button>
+            )}
+          </div>
+
+          <div className="mt-3 grid gap-4 sm:grid-cols-2">
+            <div>
+              <p className="mb-1 text-xs uppercase tracking-wide text-carbon/40">Platos</p>
+              {menu.platos.length === 0 && (
+                <p className="text-sm text-carbon/40">Nadie ha elegido todavía.</p>
+              )}
+              <ul className="space-y-1 text-sm">
+                {menu.platos.map((p) => (
+                  <li key={p.id} className="flex justify-between gap-4">
+                    <span className="text-carbon/70">{p.nombre}</span>
+                    <strong className="tabular-nums">{p.n}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <p className="mb-1 text-xs uppercase tracking-wide text-carbon/40">Bebidas</p>
+              {menu.bebidas.length === 0 && (
+                <p className="text-sm text-carbon/40">Nadie ha elegido todavía.</p>
+              )}
+              <ul className="space-y-1 text-sm">
+                {menu.bebidas.map((b) => (
+                  <li key={b.id} className="flex justify-between gap-4">
+                    <span className="text-carbon/70">{b.nombre}</span>
+                    <strong className="tabular-nums">{b.n}</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+
+          {menu.bebes > 0 && (
+            <p className="mt-3 text-xs text-carbon/40">
+              {menu.bebes} bebé(s) no eligen menú y no entran en este conteo.
+            </p>
+          )}
+        </section>
+      )}
 
       <section className="mt-8 flex flex-wrap gap-3">
         <input
@@ -420,6 +535,9 @@ export default function Admin() {
               <th className="px-4 py-3 font-medium">Categoría</th>
               <th className="px-4 py-3 font-medium">Mesa</th>
               <th className="px-4 py-3 font-medium">Confirmación</th>
+              {hayMenuConfigurado(config) && (
+                <th className="px-4 py-3 font-medium">Menú</th>
+              )}
               <th className="px-4 py-3 font-medium">Restricciones</th>
               <th className="px-4 py-3 font-medium">Entrada</th>
               <th className="px-4 py-3 text-right font-medium">Acciones</th>
@@ -453,6 +571,21 @@ export default function Admin() {
                     {i.confirmacion || 'Pendiente'}
                   </Etiqueta>
                 </td>
+                {hayMenuConfigurado(config) && (
+                  <td className="max-w-[200px] px-4 py-3 text-xs text-carbon/60">
+                    {i.confirmacion !== 'Si' ? (
+                      <span className="text-carbon/30">—</span>
+                    ) : faltaElegir(i, config) ? (
+                      <span className="text-oro">Falta elegir</span>
+                    ) : (
+                      personasDelGrupo(i)
+                        .filter((p) => p.tipo !== 'bebe')
+                        .map((p) => nombreOpcion(eleccionDe(i, p.indice).plato, platosPara(p.tipo, config)))
+                        .filter(Boolean)
+                        .join(', ') || <span className="text-carbon/30">—</span>
+                    )}
+                  </td>
+                )}
                 <td className="max-w-[200px] px-4 py-3 text-carbon/60">
                   {i.restricciones || '—'}
                 </td>
@@ -491,7 +624,10 @@ export default function Admin() {
             ))}
             {filtrados.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-carbon/50">
+                <td
+                  colSpan={hayMenuConfigurado(config) ? 9 : 8}
+                  className="px-4 py-10 text-center text-carbon/50"
+                >
                   Ningún invitado coincide con esos filtros.
                 </td>
               </tr>
@@ -518,6 +654,20 @@ export default function Admin() {
       </section>
 
       {/* ---------- Diálogos ---------- */}
+
+      <Modal
+        abierto={editandoMenu}
+        onCerrar={() => setEditandoMenu(false)}
+        titulo="Menú del banquete"
+      >
+        <ConfigMenu
+          key={editandoMenu ? 'abierto' : 'cerrado'}
+          config={config}
+          onGuardar={guardarMenu}
+          onCancelar={() => setEditandoMenu(false)}
+          guardando={guardando}
+        />
+      </Modal>
 
       <Modal abierto={creando} onCerrar={() => setCreando(false)} titulo="Agregar invitado">
         <FormularioInvitado

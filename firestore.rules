@@ -11,18 +11,37 @@ service cloud.firestore {
         return request.auth != null;
       }
 
-      // Un invitado del público solo puede tocar los campos de su confirmación.
-      // Cualquier otro campo (nombre, grupo, entradaRegistrada...) queda bloqueado.
+      // Un invitado del público solo puede tocar los campos de su confirmación
+      // y su elección de menú. Cualquier otro campo (nombre, grupo,
+      // acompanantes, entradaRegistrada...) queda bloqueado.
       function soloCamposDeConfirmacion() {
         return request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['confirmacion', 'restricciones', 'mensaje', 'fechaConfirmacion']);
+          .hasOnly(['confirmacion', 'restricciones', 'mensaje', 'fechaConfirmacion',
+                    'menu', 'menuAcompanantes']);
+      }
+
+      // Cuántos acompañantes tiene asignados HOY el invitado.
+      // Tolera el formato antiguo (`acompanantes: []`) de la migración inicial.
+      function numAcompanantes() {
+        let a = resource.data.get('acompanantes', {});
+        return (a is map && a.adultos is list && a.ninos is list)
+          ? a.adultos.size() + a.ninos.size()
+          : 0;
+      }
+
+      // El invitado elige su comida, pero NO puede regalarse lugares de más:
+      // la lista de menús no puede ser más larga que sus acompañantes reales.
+      function menuValido() {
+        let ma = request.resource.data.get('menuAcompanantes', []);
+        return ma is list && ma.size() <= numAcompanantes();
       }
 
       function confirmacionValida() {
         let d = request.resource.data;
         return d.confirmacion in ['Si', 'No']
           && (d.restricciones == null || (d.restricciones is string && d.restricciones.size() <= 300))
-          && (d.mensaje == null || (d.mensaje is string && d.mensaje.size() <= 500));
+          && (d.mensaje == null || (d.mensaje is string && d.mensaje.size() <= 500))
+          && menuValido();
       }
 
       // get: público. Hace falta para que el invitado abra su link y vea su nombre.
@@ -57,6 +76,14 @@ service cloud.firestore {
       // Alta y baja de invitados desde el panel: solo con sesión iniciada.
       allow create: if esStaff() && invitadoValido();
       allow delete: if esStaff();
+    }
+
+    // Configuración del menú del banquete.
+    // Lectura pública: el invitado necesita ver los platos al confirmar.
+    // No contiene datos personales, solo nombres de platos y bebidas.
+    match /configuracion/{documento} {
+      allow get: if true;
+      allow list, write: if request.auth != null;
     }
 
     // Todo lo demás queda cerrado.

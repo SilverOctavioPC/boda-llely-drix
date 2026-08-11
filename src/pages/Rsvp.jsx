@@ -5,7 +5,19 @@ import { QRCodeCanvas } from 'qrcode.react'
 import { db, COLECCION } from '../lib/firebase.js'
 import { EVENTO } from '../lib/evento.js'
 import { resumenAcompanantes, totalPersonas } from '../lib/acompanantes.js'
+import {
+  COLECCION_CONFIG,
+  DOC_CONFIG,
+  CONFIG_VACIA,
+  eleccionDe,
+  hayMenuConfigurado,
+  leerConfig,
+  nombreOpcion,
+  personasDelGrupo,
+  platosPara,
+} from '../lib/menu.js'
 import Cargando from '../components/Cargando.jsx'
+import SelectorMenu from '../components/SelectorMenu.jsx'
 
 const LIMITE_RESTRICCIONES = 300
 const LIMITE_MENSAJE = 500
@@ -80,12 +92,24 @@ export default function Rsvp() {
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
 
+  const [config, setConfig] = useState(CONFIG_VACIA)
+  // Elecciones indexadas por persona: -1 es el titular.
+  const [elecciones, setElecciones] = useState({})
+
   useEffect(() => {
     let activo = true
     async function cargar() {
       try {
-        const snap = await getDoc(doc(db, COLECCION, invitadoId))
+        // El menú se pide en paralelo: si no está configurado, la página
+        // funciona igual y simplemente no se muestran las preguntas.
+        const [snap, snapConfig] = await Promise.all([
+          getDoc(doc(db, COLECCION, invitadoId)),
+          getDoc(doc(db, COLECCION_CONFIG, DOC_CONFIG)).catch(() => null),
+        ])
         if (!activo) return
+
+        if (snapConfig?.exists()) setConfig(leerConfig(snapConfig.data()))
+
         if (!snap.exists()) {
           setNoExiste(true)
         } else {
@@ -93,6 +117,13 @@ export default function Rsvp() {
           setInvitado(datos)
           setRestricciones(datos.restricciones || '')
           setMensaje(datos.mensaje || '')
+
+          // Precargamos lo que ya hubiera elegido, para poder cambiarlo.
+          const previas = {}
+          for (const p of personasDelGrupo(datos)) {
+            previas[p.indice] = eleccionDe(datos, p.indice)
+          }
+          setElecciones(previas)
         }
       } catch (e) {
         console.error(e)
@@ -117,6 +148,23 @@ export default function Rsvp() {
         restricciones: respuesta === 'Si' ? restricciones.trim() || null : null,
         mensaje: mensaje.trim() || null,
         fechaConfirmacion: serverTimestamp(),
+      }
+
+      // El menú solo tiene sentido si asiste. Se guarda en dos campos: el del
+      // titular y una lista paralela para sus acompañantes.
+      if (respuesta === 'Si' && hayMenuConfigurado(config)) {
+        const personas = personasDelGrupo(invitado)
+        const propia = elecciones[-1] || {}
+        cambios.menu = { plato: propia.plato || null, bebida: propia.bebida || null }
+
+        const deAcompanantes = personas
+          .filter((p) => !p.esTitular)
+          .sort((a, b) => a.indice - b.indice)
+          .map((p) => {
+            const e = elecciones[p.indice] || {}
+            return { plato: e.plato || null, bebida: e.bebida || null }
+          })
+        cambios.menuAcompanantes = deAcompanantes
       }
       await updateDoc(doc(db, COLECCION, invitadoId), cambios)
       // Reflejamos el cambio en pantalla sin volver a leer de Firestore.
@@ -147,9 +195,10 @@ export default function Rsvp() {
 
   const yaRespondio = invitado.confirmacion === 'Si' || invitado.confirmacion === 'No'
 
-  const personas = totalPersonas(invitado)
-  const vaAcompanado = personas > 1
+  const totalDelGrupo = totalPersonas(invitado)
+  const vaAcompanado = totalDelGrupo > 1
   const textoAcompanantes = resumenAcompanantes(invitado)
+  const personas = personasDelGrupo(invitado)
 
   return (
     <main className="mx-auto max-w-md px-6 py-10">
@@ -165,7 +214,7 @@ export default function Rsvp() {
               </h2>
               <p className="mt-2 text-carbon/70">
                 {vaAcompanado
-                  ? `Los esperamos. Este pase vale por ${personas} personas:`
+                  ? `Los esperamos. Este pase vale por ${totalDelGrupo} personas:`
                   : 'Te esperamos. Este es tu pase de entrada:'}
               </p>
               <div className="mt-6">
@@ -177,8 +226,29 @@ export default function Rsvp() {
                   no hace falta que cada quien traiga el suyo.
                 </p>
               )}
+              {hayMenuConfigurado(config) && (
+                <div className="mt-6 rounded-xl bg-arena/50 px-4 py-3 text-sm">
+                  <p className="font-medium">Su menú</p>
+                  <ul className="mt-2 space-y-1 text-carbon/70">
+                    {personas.map((p) => {
+                      if (p.tipo === 'bebe') return null
+                      const e = eleccionDe(invitado, p.indice)
+                      const plato = nombreOpcion(e.plato, platosPara(p.tipo, config))
+                      const bebida = nombreOpcion(e.bebida, config.bebidas)
+                      const elegido = [plato, bebida].filter(Boolean).join(' · ')
+                      return (
+                        <li key={p.indice}>
+                          <span className="text-carbon">{p.nombre}:</span>{' '}
+                          {elegido || <span className="text-carbon/40">sin elegir</span>}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              )}
+
               {invitado.restricciones && (
-                <p className="mt-6 rounded-xl bg-arena/50 px-4 py-3 text-sm text-carbon/70">
+                <p className="mt-4 rounded-xl bg-arena/50 px-4 py-3 text-sm text-carbon/70">
                   <span className="font-medium">Anotamos:</span> {invitado.restricciones}
                 </p>
               )}
@@ -208,7 +278,7 @@ export default function Rsvp() {
 
           {vaAcompanado && (
             <p className="mt-3 rounded-xl bg-arena/50 px-4 py-3 text-sm text-carbon/70">
-              Tu invitación incluye <strong>{personas} lugares</strong>: tú y{' '}
+              Tu invitación incluye <strong>{totalDelGrupo} lugares</strong>: tú y{' '}
               {textoAcompanantes}. Al confirmar, respondes por todos.
             </p>
           )}
@@ -242,6 +312,26 @@ export default function Rsvp() {
               No podré
             </button>
           </div>
+
+          {respuesta === 'Si' && hayMenuConfigurado(config) && (
+            <div className="mt-6">
+              <p className="mb-1 text-sm font-medium">
+                {personas.length > 1 ? '¿Qué van a querer?' : '¿Qué vas a querer?'}
+              </p>
+              <p className="mb-3 text-xs text-carbon/50">Opcional</p>
+              <SelectorMenu
+                invitado={invitado}
+                config={config}
+                elecciones={elecciones}
+                onCambio={(indice, campo, valor) =>
+                  setElecciones((prev) => ({
+                    ...prev,
+                    [indice]: { ...(prev[indice] || {}), [campo]: valor },
+                  }))
+                }
+              />
+            </div>
+          )}
 
           {respuesta === 'Si' && (
             <div className="mt-6">
