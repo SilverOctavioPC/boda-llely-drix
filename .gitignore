@@ -1,0 +1,23 @@
+node_modules
+dist
+dist-ssr
+*.local
+
+# Variables de entorno (contienen la config de Firebase)
+.env
+.env.*
+!.env.example
+
+# Credenciales de administrador de Firebase: NUNCA subir a git
+serviceAccount.json
+*serviceAccount*.json
+
+# Salidas de los scripts de migración
+salida/
+
+# Editor / SO
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db

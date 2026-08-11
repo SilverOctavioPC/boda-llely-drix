@@ -1,0 +1,299 @@
+# Guía de uso
+
+Referencia rápida del día a día. Para la instalación desde cero, mira el
+[README](README.md).
+
+---
+
+## Arrancar el servidor
+
+Abre una terminal **nueva** en la carpeta del proyecto y corre:
+
+```powershell
+cd c:\Users\CEJA\Desktop\boda-llely-drix
+npm run dev
+```
+
+Queda corriendo en **http://localhost:5173** con recarga automática: si editas
+un archivo, el navegador se actualiza solo.
+
+Para **detenerlo**: `Ctrl + C` en esa terminal.
+
+> Node está instalado en modo portable, en
+> `C:\Users\CEJA\AppData\Local\nodejs-portable\`. Esa ruta ya está en el `Path`
+> de usuario, así que `npm` funciona en cualquier terminal nueva. Si te dice
+> *"npm no se reconoce"*, cierra la terminal y abre una nueva — el `Path` solo
+> se lee al abrirla.
+
+### Si el puerto está ocupado
+
+Vite se pasa solo al 5174 y te lo dice en pantalla. Pero los links de prueba de
+abajo apuntan al 5173, así que conviene liberarlo. Para ver qué lo ocupa:
+
+```powershell
+Get-NetTCPConnection -LocalPort 5173 -State Listen | ForEach-Object {
+  Get-Process -Id $_.OwningProcess
+}
+```
+
+Y para cerrarlo, `Stop-Process -Id <PID> -Force`.
+
+---
+
+## Links de prueba
+
+Estos son los 11 invitados **ficticios** que crea `npm run sembrar`. Ninguno
+sale del Excel real. Suman **15 personas**, porque dos de ellos llevan
+acompañantes.
+
+**Empieza por este** — Patricia Alcázar va con 3 acompañantes, así que verás el
+caso completo: un solo QR que vale por 4 personas.
+
+```
+http://localhost:5173/rsvp/R26BpMwR9l3bJltsC9Xm
+```
+
+| Qué prueba | Invitado | Link |
+| --- | --- | --- |
+| **Grupo de 4 con nombres** | Patricia Alcázar | `http://localhost:5173/rsvp/xOBl8FW9fKKauRl8g4P6` |
+| **Acompañante sin nombre** ("2 lugares") | Gerardo Pineda | `http://localhost:5173/rsvp/rPaHLLwaRjCL2L2Mz41N` |
+| Formulario de confirmación | Valentina Ruiz | `http://localhost:5173/rsvp/SquLqPlAVrbGcSOrDCH5` |
+| Flujo de "No podré" | Rodrigo Salas | `http://localhost:5173/rsvp/elwGsEqH2owrmvZw4yqK` |
+| Ya confirmó: QR + restricciones | Camila Ferrer | `http://localhost:5173/rsvp/GdmwkbTs6nMC29VpfkUJ` |
+| QR válido → **verde** al escanear | Tomás Iriarte | `http://localhost:5173/rsvp/L2j2Tt9GlJaa8xCKo89n` |
+| Niña: Mujer + categoría Niño | Renata Ocampo | `http://localhost:5173/rsvp/mro71dYyZ1tnePDOLe1u` |
+| Bebé: cuenta aparte, sin menú | Bruno Sepúlveda | `http://localhost:5173/rsvp/Qe11ukI7wyc7Yw7ONN12` |
+| Ya entró → **ámbar** al escanear | Ignacio Bustos | `http://localhost:5173/rsvp/Ry8P1lLTyKDHFuIwNbHs` |
+| Dijo NO → **rojo** al escanear | Lucía Ordóñez | `http://localhost:5173/rsvp/xtvSftBl63U3u6FXpxOC` |
+| Pendiente → **rojo** al escanear | Esteban Quiroga | `http://localhost:5173/rsvp/wWrBiZJE1RSGkyPJmEfD` |
+
+Patricia Alcázar lleva a **Héctor Alcázar**, **Sofía (7 años)** y **Mateo
+(4 años)** — al escanear su QR deben aparecer los tres por nombre. Gerardo
+Pineda lleva un acompañante **sin nombre**, para ver que ese caso también
+funciona.
+
+Con estos datos el panel debe mostrar **15 personas** en total, y en la franja
+del banquete: **5 adultos · 3 niños · 1 bebé** (9 personas, solo las que
+confirmaron que sí).
+
+⚠️ **Estos IDs cambian si vuelves a correr `npm run sembrar`.** El script borra
+los anteriores y crea otros nuevos, e imprime los links en pantalla. También
+puedes copiar el link de cualquier invitado desde el panel con el botón
+**"Link"** de su fila.
+
+### Panel de novios
+
+```
+http://localhost:5173/admin
+```
+
+Entra con `novios@bodallelydrix.com` y la contraseña que definiste.
+(No la anoto aquí a propósito: este archivo puede acabar en GitHub.)
+
+---
+
+## Las tres pantallas
+
+### `/rsvp/:id` — pública, una por invitado
+
+Lo que abre el invitado desde WhatsApp. Ve su nombre precargado, responde
+Sí/No, y si dice que sí puede añadir restricciones alimenticias y un mensaje.
+Al guardar aparece su **código QR** con botón de descarga.
+
+Si ya había respondido antes, entra directo a su estado y su QR — no le pide
+llenar el formulario otra vez.
+
+### `/admin` — panel de novios
+
+Requiere sesión. Métricas arriba, tabla filtrable abajo, y los mensajes que
+dejaron los invitados al final. Se actualiza **en tiempo real**: si alguien
+confirma mientras lo tienes abierto, el número cambia solo.
+
+### `/admin/scanner` — escáner de entrada
+
+Requiere sesión. Abre la cámara y lee los QR:
+
+| Color | Significa |
+| --- | --- |
+| 🟢 Verde | Adelante. Queda registrada su entrada con la hora. |
+| 🟡 Ámbar | Ese pase **ya se usó**. Verifica con la persona. |
+| 🔴 Rojo | No confirmó asistencia, o el código no es válido. |
+
+Arriba lleva un contador en vivo de cuántos han entrado del total esperado.
+
+---
+
+## Qué puedes hacer en el panel
+
+**➕ Agregar invitado** — botón arriba a la derecha. Al guardar te muestra el
+link de RSVP ya generado, con botón de copiar, listo para WhatsApp.
+
+**Acompañantes** — dentro del formulario, tanto al crear como al editar. Con
+los botones `−` y `+` indicas cuántos adultos y cuántos niños lleva esa persona.
+Por cada uno aparece **nombre y sexo** (y edad, en el caso de los niños), todos
+**opcionales**: si no los sabes, déjalos en blanco y el lugar cuenta igual.
+Abajo te confirma en todo momento *"Este grupo entra con 4 personas y un solo QR"*.
+
+Los nombres que sí escribas aparecen **en la puerta al escanear**, para poder
+cotejar con la gente que tienes enfrente, y salen en el CSV del banquete.
+
+Así funciona un grupo:
+
+- Los acompañantes **no son invitados aparte**: no tienen nombre, ni link, ni
+  QR propio. Son lugares que cuelgan del titular.
+- El titular recibe **un solo link y un solo QR** que vale por todos. Mandas un
+  mensaje, no cuatro.
+- En la puerta, al escanear ese QR aparece en grande **"4 personas"** y entra
+  el grupo completo de una vez.
+- Todos los contadores del panel están **en personas, no en invitaciones**. Un
+  grupo de 4 suma 4 al aforo y 4 al banquete.
+
+Para sumarle acompañantes a alguien que ya está en la lista (el caso más común:
+*"voy con mi esposa y dos niños"*), búscalo en la tabla, dale a **Editar** y usa
+los contadores. No hace falta darlo de alta otra vez.
+
+**Sexo y Categoría son campos distintos.** El Excel original los mezclaba en
+una sola columna (`Hombre / Mujer / Niño / Niña / Bebé`), lo que impedía contar
+menús infantiles sin perder el sexo. Ahora:
+
+- **Sexo**: Mujer · Hombre · Sin especificar
+- **Categoría**: Adulto · Niño · Bebé
+
+Una niña se registra como *Sexo: Mujer* + *Categoría: Niño*. Al migrar el Excel
+la conversión es automática.
+
+**La Categoría solo aparece al editar, no al dar de alta.** Cuando agregas a
+alguien nuevo siempre es un adulto: los niños se suman abajo como acompañantes.
+Pero el campo sigue existiendo al editar porque de la migración vienen **10
+invitados que son niños como titulares** (MAGIE de 7 años, LIAM de 3, Kiara de
+10…), y hay que poder corregirlos. Arriba de la tabla verás la franja
+**"De los que asistirán: X adultos · Y niños · Z bebés"** — ese es el número que
+le pasas al banquete, y solo cuenta a quienes ya confirmaron.
+
+**Editar** — en cada fila. Sirve sobre todo para dos cosas reales de este
+proyecto:
+
+- Corregir los ~15 nombres de la Lista Llely que no son nombres propios
+  (`ESPOSA`, `PAREJA DE IVÁN`, `GEMELAS`…), sin tocar el Excel ni volver a migrar.
+- Marcar confirmaciones a mano cuando alguien te responde por teléfono o en
+  persona y nunca abre su link.
+
+**Link** — copia al portapapeles el link de RSVP de esa persona. Útil para
+reenviárselo a quien no ha respondido.
+
+**Borrar** — con red de seguridad: si esa persona **ya confirmó que sí** o **ya
+registró entrada**, te obliga a escribir su nombre completo antes de dejarte
+borrar, y te sugiere que mejor la edites a "No asistirá" para conservar el
+registro.
+
+**Descargar CSV** — exporta lo que estés viendo con los filtros aplicados,
+incluyendo restricciones alimenticias y el link de cada quien. Es lo que le
+pasas al banquete.
+
+---
+
+## Todos los comandos
+
+| Comando | Qué hace |
+| --- | --- |
+| `npm run dev` | Arranca el servidor de desarrollo en el 5173 |
+| `npm run build` | Compila para producción (carpeta `dist/`) |
+| `npm run preview` | Sirve lo compilado, para revisar antes de desplegar |
+| `npm run verificar` | Diagnostica la configuración de Firebase y avisa qué falta |
+| `npm run sembrar` | Crea los 8 invitados de prueba (borra los anteriores) |
+| `npm run limpiar-prueba` | Lista los invitados de prueba |
+| `npm run limpiar-prueba -- --si` | Los borra de verdad |
+| `npm run migrar -- --dry-run` | Lee el Excel y reporta, **sin escribir nada** |
+| `npm run migrar` | Sube los 210 invitados reales a Firestore |
+| `npm run links` | Genera `salida/links-rsvp.csv` con todos los links |
+
+---
+
+## ¿Cuándo hay que republicar las reglas?
+
+No en cada cambio. Solo cuando el cambio toca lo que las reglas vigilan.
+
+| Cambio | ¿Republicar? |
+| --- | --- |
+| Campo nuevo que **solo los novios** escriben desde el panel | **No** |
+| Campo nuevo que **el invitado** escribe desde su link | **Sí** |
+| Nuevo valor permitido (categoría, lista, confirmación) | **Sí** |
+| Textos, colores, columnas de la tabla, contenido del CSV | **No** |
+| Quitar un campo | **No** |
+
+El motivo: `allow update: if esStaff()` es un permiso amplio, así que los novios
+pueden escribir campos nuevos sin tocar nada. Pero el público está limitado a una
+lista blanca de cuatro campos exactos:
+
+```
+['confirmacion', 'restricciones', 'mensaje', 'fechaConfirmacion']
+```
+
+Si se añade una pregunta nueva al formulario del invitado (por ejemplo
+"¿necesitas transporte?"), hay que meterla en esa lista o su confirmación
+fallará con *Missing or insufficient permissions*.
+
+Lo mismo con los valores cerrados: `d.categoria in ['Adulto', 'Niño', 'Bebé']`
+rechaza cualquier valor que no esté en la lista.
+
+### Cómo comprobar que están bien publicadas
+
+Sin abrir la app, desde la terminal (sustituye el ID por el de cualquier
+invitado):
+
+```bash
+KEY=$(grep '^VITE_FIREBASE_API_KEY=' .env | cut -d= -f2)
+BASE="https://firestore.googleapis.com/v1/projects/boda-llely-drix/databases/(default)/documents"
+
+# Debe dar 200: el invitado puede abrir su link
+curl -s -o /dev/null -w "%{http_code}\n" "$BASE/invitados/PON_UN_ID?key=$KEY"
+
+# Debe dar 403: nadie puede descargar la lista completa
+curl -s -o /dev/null -w "%{http_code}\n" "$BASE/invitados?key=$KEY"
+```
+
+Si el primero da 403, las reglas no están publicadas. Si el segundo da 200,
+la lista de invitados está expuesta y hay que corregirlo ya.
+
+### Publicarlas con un comando
+
+Para no depender de copiar y pegar, puedes autorizar la CLI una sola vez **en tu
+propia terminal** (abre el navegador para que entres con tu cuenta de Google):
+
+```powershell
+npx firebase-tools login
+```
+
+A partir de ahí, cada republicación es:
+
+```powershell
+npx firebase-tools deploy --only firestore:rules
+```
+
+Toma el contenido de [`firestore.rules`](firestore.rules) directamente, así que
+no hay riesgo de pegar una versión vieja.
+
+---
+
+## Problemas comunes
+
+**"Missing or insufficient permissions" en la consola del navegador**
+No has publicado las reglas, o publicaste una versión vieja. Copia
+[`firestore.rules`](firestore.rules) completo en Firebase Console → Firestore →
+Reglas → Publicar.
+
+**El botón "Agregar invitado" falla**
+Mismo motivo: las reglas nuevas incluyen `allow create`. Si publicaste las
+reglas antes de que existiera esa función, vuelve a publicarlas.
+
+**La cámara del escáner no abre**
+Necesita HTTPS o `localhost`. Desde el celular con una IP tipo
+`192.168.0.39:5173` **no funciona nunca**, por seguridad del navegador. La
+prueba real hay que hacerla ya desplegado en Vercel.
+
+**"npm no se reconoce"**
+Cierra la terminal y abre una nueva. El `Path` solo se lee al abrirla.
+
+**El panel no muestra invitados**
+Corre `npm run verificar`. Si dice que la colección tiene 0 documentos, te falta
+`npm run sembrar` (prueba) o `npm run migrar` (real).

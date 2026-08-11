@@ -1,0 +1,33 @@
+{
+  "name": "boda-llely-drix",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "verificar": "node scripts/verificar.js",
+    "migrar": "node scripts/migrar.js",
+    "links": "node scripts/generarLinks.js",
+    "sembrar": "node scripts/sembrarPrueba.js",
+    "limpiar-prueba": "node scripts/limpiarPrueba.js"
+  },
+  "dependencies": {
+    "firebase": "^10.13.2",
+    "html5-qrcode": "^2.3.8",
+    "qrcode.react": "^3.1.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "autoprefixer": "^10.4.20",
+    "exceljs": "^4.4.0",
+    "firebase-admin": "^12.5.0",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.13",
+    "vite": "^5.4.8"
+  }
+}

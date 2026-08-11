@@ -1,0 +1,67 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /invitados/{invitadoId} {
+
+      // El staff (novios) son cualquier usuario autenticado con Firebase Auth.
+      // Como las cuentas se crean a mano en la consola, no hay registro público.
+      function esStaff() {
+        return request.auth != null;
+      }
+
+      // Un invitado del público solo puede tocar los campos de su confirmación.
+      // Cualquier otro campo (nombre, grupo, entradaRegistrada...) queda bloqueado.
+      function soloCamposDeConfirmacion() {
+        return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['confirmacion', 'restricciones', 'mensaje', 'fechaConfirmacion']);
+      }
+
+      function confirmacionValida() {
+        let d = request.resource.data;
+        return d.confirmacion in ['Si', 'No']
+          && (d.restricciones == null || (d.restricciones is string && d.restricciones.size() <= 300))
+          && (d.mensaje == null || (d.mensaje is string && d.mensaje.size() <= 500));
+      }
+
+      // get: público. Hace falta para que el invitado abra su link y vea su nombre.
+      // Solo sirve conociendo el ID exacto (aleatorio, 20 caracteres).
+      allow get: if true;
+
+      // list: bloqueado para el público. Esto es lo que impide que alguien
+      // descargue la lista completa de invitados. Sin esta línea, el `get`
+      // público expondría toda la colección.
+      allow list: if esStaff();
+
+      // Validación de un invitado dado de alta desde el panel.
+      // El script de migración usa el Admin SDK y se salta estas reglas.
+      function invitadoValido() {
+        let d = request.resource.data;
+        return d.nombre is string && d.nombre.size() > 0 && d.nombre.size() <= 120
+          && d.grupo in ['Llely', 'Drix']
+          && d.categoria in ['Adulto', 'Niño', 'Bebé']
+          && (d.sexo == null || d.sexo in ['Mujer', 'Hombre'])
+          && d.confirmacion in ['Si', 'No', 'Pendiente']
+          && d.entradaRegistrada is bool
+          && d.acompanantes.adultos is list
+          && d.acompanantes.adultos.size() <= 15
+          && d.acompanantes.ninos is list
+          && d.acompanantes.ninos.size() <= 15;
+      }
+
+      // El público confirma; el staff puede editar cualquier cosa
+      // (incluido marcar la entrada desde el escáner).
+      allow update: if esStaff() || (soloCamposDeConfirmacion() && confirmacionValida());
+
+      // Alta y baja de invitados desde el panel: solo con sesión iniciada.
+      allow create: if esStaff() && invitadoValido();
+      allow delete: if esStaff();
+    }
+
+    // Todo lo demás queda cerrado.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

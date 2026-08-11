@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-crema text-carbon antialiased;
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  /* Evita el zoom automático de iOS al enfocar un input (fuentes < 16px). */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3
+           font-medium transition active:scale-[.98]
+           disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primario {
+    @apply btn bg-salvia text-white hover:bg-salviaOscuro;
+  }
+
+  .btn-secundario {
+    @apply btn border border-arena bg-white text-carbon hover:bg-arena;
+  }
+
+  .tarjeta {
+    @apply rounded-2xl border border-arena bg-white p-6 shadow-sm;
+  }
+
+  .campo {
+    @apply w-full rounded-xl border border-arena bg-white px-4 py-3
+           outline-none focus:border-salvia focus:ring-2 focus:ring-salvia/20;
+  }
+}
