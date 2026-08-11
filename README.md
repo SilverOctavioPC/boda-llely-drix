@@ -244,13 +244,35 @@ Personaliza fecha, lugar y nombres en [`src/lib/evento.js`](src/lib/evento.js).
   fechaEntrada: timestamp | null,
 
   // Acompañantes: lugares que cuelgan del titular. No son documentos propios,
-  // no tienen nombre ni link ni QR. El QR del titular vale por todo el grupo.
+  // no tienen link ni QR. El QR del titular vale por todo el grupo.
+  // Nombre, sexo y edad son opcionales.
   acompanantes: {
-    adultos: 2,
-    ninos: [{ edad: '6 años' }, { edad: '3 años' }]
+    adultos: [{ nombre: 'Ana López', sexo: 'Mujer' }],
+    ninos:   [{ nombre: 'Leo', sexo: 'Hombre', edad: '6 años' }]
   },
 
+  // Menú elegido. Los ids apuntan a las opciones de configuracion/menu.
+  menu: { entrada: 'e1', plato: 'p2', postre: 'd1', bebida: 'b1' },
+
+  // Una entrada por acompañante, en el mismo orden: primero adultos, luego
+  // niños. Va SEPARADO de `acompanantes` a propósito — ver Seguridad.
+  menuAcompanantes: [{ entrada: 'e1', plato: 'p1', postre: 'd1', bebida: 'b1' }],
+
   origen: { hoja, fila, numero }   // trazabilidad al Excel
+}
+```
+
+Colección `configuracion`, documento `menu`:
+
+```js
+{
+  entradas: [{ id: 'e1', nombre: 'Crema de elote' }],
+  entradasNinos: [],           // vacío = a los niños no se les pregunta
+  platos:   [{ id: 'p1', nombre: 'Pollo' }, { id: 'p2', nombre: 'Res' }],
+  platosNinos: [{ id: 'pn', nombre: 'Nuggets' }],
+  postres:  [{ id: 'd1', nombre: 'Pastel' }],
+  postresNinos: [{ id: 'dn', nombre: 'Helado' }],
+  bebidas:  [{ id: 'b1', nombre: 'Vino tinto' }]   // comunes a todos
 }
 ```
 
@@ -268,6 +290,12 @@ Personaliza fecha, lugar y nombres en [`src/lib/evento.js`](src/lib/evento.js).
   `fechaConfirmacion`. No puede tocar su nombre ni marcarse la entrada.
 - Crear y borrar invitados exige sesión iniciada, y el alta valida nombre,
   grupo y confirmación antes de aceptarse.
+- **Un invitado no puede regalarse lugares de más.** Sus elecciones de menú van
+  en `menuAcompanantes`, una lista separada de `acompanantes`. Si estuvieran
+  dentro, para dejarle elegir habría que darle permiso de escritura sobre
+  `acompanantes` y podría editar su link para sumarse acompañantes. La regla
+  `menuValido()` además rechaza cualquier lista de menús más larga que sus
+  acompañantes reales.
 - `/admin` y `/admin/scanner` exigen sesión de Firebase Auth.
 - El registro de entrada usa una **transacción**, así que dos celulares
   escaneando a la vez no descuadran el conteo.
@@ -278,6 +306,11 @@ Personaliza fecha, lugar y nombres en [`src/lib/evento.js`](src/lib/evento.js).
   "autenticado" y "no autenticado", no entre roles. Si creas una cuenta aparte
   para quien escanea en la puerta, esa cuenta también puede ver la lista
   completa, editarla y borrar invitados.
+- **La obligatoriedad del menú se valida en el navegador, no en las reglas.**
+  Alguien con conocimientos técnicos podría confirmar sin elegir llamando a la
+  API directamente. Replicarlo en las reglas obligaría a duplicar ahí toda la
+  lógica de qué opciones le tocan a cada persona, y rompería la edición desde el
+  panel. El panel muestra igualmente quién tiene algo pendiente.
 
 - **El QR contiene solo el ID del invitado, sin firma.** Quien tenga el link de
   alguien puede reproducir su QR. La defensa real es `entradaRegistrada`: el
@@ -293,6 +326,34 @@ Personaliza fecha, lugar y nombres en [`src/lib/evento.js`](src/lib/evento.js).
 
 ## Estado de verificación
 
+### Estructura del código
+
+```
+src/
+  lib/
+    firebase.js       app + Firestore (sin Auth, ver nota de bundles)
+    auth.js           Firebase Auth — solo lo importa la zona privada
+    acompanantes.js   grupos: lectura tolerante, conteos, nombres
+    menu.js           los 4 tiempos, opciones por comensal, conteos
+    evento.js         nombres, fecha y lugar — edítalo para personalizar
+  components/
+    Modal.jsx             diálogo accesible (Escape, foco, scroll)
+    FormularioInvitado.jsx  alta y edición, con contadores de acompañantes
+    ConfigMenu.jsx        editor de las listas del menú
+    SelectorMenu.jsx      elección por persona (lo usan invitado y panel)
+    RutaProtegida.jsx     redirige a /login sin sesión
+  pages/
+    Rsvp.jsx      pública: confirmar, elegir menú, QR
+    Login.jsx     acceso de los novios
+    Admin.jsx     panel
+    Scanner.jsx   lectura de QR en la puerta
+  ZonaPrivada.jsx  agrupa todo lo privado en un chunk aparte
+```
+
+Para **añadir un tiempo al menú** (o quitarlo) basta con editar la lista
+`CURSOS` en `src/lib/menu.js`: el editor, el selector, los conteos y el CSV se
+generan a partir de ahí.
+
 ### Comprobado en ejecución ✅
 
 - **`npm install`** — 420 paquetes, sin conflictos de versiones.
@@ -304,6 +365,17 @@ Personaliza fecha, lugar y nombres en [`src/lib/evento.js`](src/lib/evento.js).
 - **Sintaxis de los 6 scripts de Node.**
 - **Separación de bundles** — verificado que el SDK de Firebase Auth ya **no**
   viaja en el chunk público.
+- **Reglas de Firestore, de punta a punta** — con una sesión real de novios:
+  login OK, listar con sesión OK, crear invitado con acompañantes OK. Y sin
+  sesión: leer un invitado por su ID 200, listar la colección 403, crear 403.
+- **Lógica del menú** — 20 comprobaciones sobre `src/lib/menu.js`: los cuatro
+  tiempos en orden, menú infantil separado, bebidas compartidas, bebés sin
+  elección, listas vacías que no se preguntan, conteos mezclando adulto e
+  infantil, y compatibilidad con documentos guardados antes de que existiera
+  el postre.
+- **Despliegue en Vercel** — `/`, `/admin`, `/login`, `/admin/scanner` y
+  `/rsvp/:id` responden 200 y sirven la app (hizo falta `vercel.json` con el
+  *rewrite* a `index.html`; sin él, recargar en cualquier ruta daba 404).
 
 El *dry-run* también detectó **19 nombres repetidos** entre personas distintas
 (`joaquín pérez` ×3, `esposa` ×2, `karen flores +1` ×2, `vicky` ×2…). Cada uno
@@ -325,13 +397,13 @@ descargaban la librería del escáner y el módulo de autenticación sin usarlos
 
 ### Sin comprobar todavía ⚠️
 
-Esto necesita un proyecto de Firebase real, que aún no existe:
-
-- Que la app lea y escriba en Firestore de verdad (login, confirmación, panel).
-- Que las reglas de `firestore.rules` hagan exactamente lo que dicen.
-- Que la cámara del escáner arranque y se detenga bien en un celular real.
-- La migración real de los 210 invitados (solo se probó la lectura, no la
-  escritura).
+- **Que un invitado pueda guardar su menú.** Requiere publicar la versión actual
+  de `firestore.rules` (la que añade `menu` y `menuAcompanantes` a la lista
+  blanca). Hasta entonces, confirmar con menú falla con *permission denied*.
+- **La cámara del escáner en un celular real.** Solo se puede probar ya
+  desplegado: el navegador exige HTTPS y en `192.168.x.x` nunca funciona.
+- **La migración real de los 210 invitados.** Se probó a fondo la lectura del
+  Excel (`--dry-run`), no la escritura en Firestore.
 
 **Prueben el escáner antes del día del evento**, con un QR real y en el celular
 que van a usar en la puerta. La cámara del navegador exige HTTPS (Vercel lo da)

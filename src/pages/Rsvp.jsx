@@ -6,15 +6,17 @@ import { db, COLECCION } from '../lib/firebase.js'
 import { EVENTO } from '../lib/evento.js'
 import { resumenAcompanantes, totalPersonas } from '../lib/acompanantes.js'
 import {
+  aMenuGuardable,
   COLECCION_CONFIG,
-  DOC_CONFIG,
   CONFIG_VACIA,
+  CURSOS,
+  DOC_CONFIG,
   eleccionDe,
   hayMenuConfigurado,
   leerConfig,
-  nombreOpcion,
+  opcionesPara,
   personasDelGrupo,
-  platosPara,
+  resumenEleccion,
 } from '../lib/menu.js'
 import Cargando from '../components/Cargando.jsx'
 import SelectorMenu from '../components/SelectorMenu.jsx'
@@ -95,6 +97,8 @@ export default function Rsvp() {
   const [config, setConfig] = useState(CONFIG_VACIA)
   // Elecciones indexadas por persona: -1 es el titular.
   const [elecciones, setElecciones] = useState({})
+  // Personas a las que les falta algo del menú, tras intentar enviar.
+  const [incompletas, setIncompletas] = useState([])
 
   useEffect(() => {
     let activo = true
@@ -140,6 +144,31 @@ export default function Rsvp() {
 
   async function guardar() {
     if (!respuesta) return
+
+    // El menú es obligatorio para quien asiste. Se valida aquí, contra las
+    // opciones que realmente le tocan a cada persona de su grupo.
+    if (respuesta === 'Si' && hayMenuConfigurado(config)) {
+      const faltan = personasDelGrupo(invitado).filter((persona) => {
+        if (persona.tipo === 'bebe') return false
+        const elegido = elecciones[persona.indice] || {}
+        return CURSOS.some((c) => {
+          const opciones = opcionesPara(c.clave, persona.tipo, config)
+          return opciones.length > 0 && !elegido[c.clave]
+        })
+      })
+
+      if (faltan.length > 0) {
+        setIncompletas(faltan)
+        setError(
+          faltan.length === 1
+            ? `Falta elegir el menú de ${faltan[0].nombre}.`
+            : `Falta elegir el menú de: ${faltan.map((p) => p.nombre).join(', ')}.`
+        )
+        return
+      }
+    }
+
+    setIncompletas([])
     setGuardando(true)
     setError('')
     try {
@@ -153,18 +182,11 @@ export default function Rsvp() {
       // El menú solo tiene sentido si asiste. Se guarda en dos campos: el del
       // titular y una lista paralela para sus acompañantes.
       if (respuesta === 'Si' && hayMenuConfigurado(config)) {
-        const personas = personasDelGrupo(invitado)
-        const propia = elecciones[-1] || {}
-        cambios.menu = { plato: propia.plato || null, bebida: propia.bebida || null }
-
-        const deAcompanantes = personas
+        cambios.menu = aMenuGuardable(elecciones[-1])
+        cambios.menuAcompanantes = personasDelGrupo(invitado)
           .filter((p) => !p.esTitular)
           .sort((a, b) => a.indice - b.indice)
-          .map((p) => {
-            const e = elecciones[p.indice] || {}
-            return { plato: e.plato || null, bebida: e.bebida || null }
-          })
-        cambios.menuAcompanantes = deAcompanantes
+          .map((p) => aMenuGuardable(elecciones[p.indice]))
       }
       await updateDoc(doc(db, COLECCION, invitadoId), cambios)
       // Reflejamos el cambio en pantalla sin volver a leer de Firestore.
@@ -232,10 +254,7 @@ export default function Rsvp() {
                   <ul className="mt-2 space-y-1 text-carbon/70">
                     {personas.map((p) => {
                       if (p.tipo === 'bebe') return null
-                      const e = eleccionDe(invitado, p.indice)
-                      const plato = nombreOpcion(e.plato, platosPara(p.tipo, config))
-                      const bebida = nombreOpcion(e.bebida, config.bebidas)
-                      const elegido = [plato, bebida].filter(Boolean).join(' · ')
+                      const elegido = resumenEleccion(invitado, p, config)
                       return (
                         <li key={p.indice}>
                           <span className="text-carbon">{p.nombre}:</span>{' '}
@@ -318,11 +337,14 @@ export default function Rsvp() {
               <p className="mb-1 text-sm font-medium">
                 {personas.length > 1 ? '¿Qué van a querer?' : '¿Qué vas a querer?'}
               </p>
-              <p className="mb-3 text-xs text-carbon/50">Opcional</p>
+              <p className="mb-3 text-xs text-carbon/50">
+                Elige entrada, plato fuerte y bebida de cada persona.
+              </p>
               <SelectorMenu
                 invitado={invitado}
                 config={config}
                 elecciones={elecciones}
+                incompletas={incompletas}
                 onCambio={(indice, campo, valor) =>
                   setElecciones((prev) => ({
                     ...prev,

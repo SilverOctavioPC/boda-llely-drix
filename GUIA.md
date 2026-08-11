@@ -187,8 +187,67 @@ borrar, y te sugiere que mejor la edites a "No asistirá" para conservar el
 registro.
 
 **Descargar CSV** — exporta lo que estés viendo con los filtros aplicados,
-incluyendo restricciones alimenticias y el link de cada quien. Es lo que le
-pasas al banquete.
+incluyendo el menú de cada persona, restricciones alimenticias y el link de cada
+quien. Es lo que le pasas al banquete.
+
+**Paginación** — la tabla muestra 25 invitados por página, con *Anterior* y
+*Siguiente* abajo. Al cambiar cualquier filtro vuelve a la página 1. Con 210
+invitados, sin esto el scroll sería interminable.
+
+---
+
+## El menú del banquete
+
+Cuatro tiempos: **entrada → plato fuerte → postre → bebida**.
+
+### Configurarlo (botón "Menú" arriba)
+
+Se abre un editor con siete listas: cada tiempo tiene su versión de adulto y su
+versión infantil, salvo las bebidas, que son comunes.
+
+| Lista | Para quién |
+| --- | --- |
+| Entrada / Entrada infantil | Adultos / Niños |
+| Plato fuerte / Plato fuerte infantil | Adultos / Niños |
+| Postre / Postre infantil | Adultos / Niños |
+| Bebidas | Todos |
+
+**Una lista vacía = esa pregunta no se hace.** Si los niños comen la misma
+entrada que los adultos, deja vacía la infantil y no se les preguntará. Si no
+vas a ofrecer postre, deja las dos listas de postre vacías.
+
+Los **bebés no eligen nada** y no entran en ningún conteo.
+
+### Lo que ve el invitado
+
+Al marcar "Sí asistiré" aparece un bloque por cada persona de su grupo, con su
+nombre. A quien esté marcado como Niño solo se le ofrecen las opciones
+infantiles.
+
+**Elegir es obligatorio.** No puede enviar su confirmación con algo pendiente:
+sale el mensaje *"Falta elegir el menú de Ana López"*, la tarjeta de esa persona
+se marca en rojo y los tiempos sin elegir llevan un asterisco.
+
+### Cambiar el menú de alguien (botón "Menú" en su fila)
+
+Para cuando te avisan por teléfono que prefieren el pescado. Abre el mismo
+selector precargado con lo que ya había elegido.
+
+A diferencia del invitado, **aquí no se exige completarlo**: puedes cambiar solo
+lo de una persona y guardar.
+
+### El conteo para el banquete
+
+Debajo de las métricas aparece el desglose en vivo de los cuatro tiempos, con
+cuántos pidieron cada opción y cuántos siguen sin elegir. El enlace
+**"Hay elecciones pendientes — ver quiénes"** filtra la tabla para que puedas
+perseguirlos.
+
+Solo cuenta a quienes ya confirmaron que sí, e incluye a los acompañantes.
+
+> **Nota sobre "Acceso":** la columna que antes se llamaba *Entrada* ahora se
+> llama **Acceso**, y significa "ya pasó por la puerta". Se renombró porque
+> *entrada* ya es el primer tiempo del menú.
 
 ---
 
@@ -220,6 +279,13 @@ No en cada cambio. Solo cuando el cambio toca lo que las reglas vigilan.
 | Nuevo valor permitido (categoría, lista, confirmación) | **Sí** |
 | Textos, colores, columnas de la tabla, contenido del CSV | **No** |
 | Quitar un campo | **No** |
+| **Añadir un tiempo al menú** (ej. un cuarto plato) | **No** |
+
+Lo del menú merece explicación: añadir tiempos **no** requiere tocar reglas
+porque todos viven dentro de los campos `menu` y `menuAcompanantes`, que ya
+están permitidos. Solo hay que añadir una entrada a `CURSOS` en
+[`src/lib/menu.js`](src/lib/menu.js) — el editor, el selector del invitado, los
+conteos y el CSV se generan solos a partir de esa lista.
 
 El motivo: `allow update: if esStaff()` es un permiso amplio, así que los novios
 pueden escribir campos nuevos sin tocar nada. Pero el público está limitado a una
@@ -297,3 +363,17 @@ Cierra la terminal y abre una nueva. El `Path` solo se lee al abrirla.
 **El panel no muestra invitados**
 Corre `npm run verificar`. Si dice que la colección tiene 0 documentos, te falta
 `npm run sembrar` (prueba) o `npm run migrar` (real).
+
+**El invitado no puede guardar su menú**
+Las reglas publicadas son anteriores al menú. Republica
+[`firestore.rules`](firestore.rules): necesita `menu` y `menuAcompanantes` en la
+lista blanca, y el bloque `match /configuracion/{documento}`.
+
+**El botón "Menú" no aparece en las filas**
+No hay menú configurado todavía. Créalo con el botón **Menú** de arriba; en
+cuanto haya al menos una opción, aparece la columna y el botón en cada fila.
+
+**404 al recargar en /admin o /rsvp/... en Vercel**
+Falta [`vercel.json`](vercel.json) con el *rewrite* a `index.html`, o el
+despliegue es anterior a ese archivo. Vercel además cachea los 404: recarga con
+`Ctrl + Shift + R`.

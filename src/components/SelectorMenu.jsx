@@ -1,4 +1,4 @@
-import { personasDelGrupo, platosPara } from '../lib/menu.js'
+import { CURSOS, opcionesPara, personasDelGrupo } from '../lib/menu.js'
 
 /** Botones de opción; más cómodos que un desplegable en el celular. */
 function Opciones({ opciones, valor, onCambio, etiquetaGrupo }) {
@@ -12,8 +12,7 @@ function Opciones({ opciones, valor, onCambio, etiquetaGrupo }) {
             type="button"
             role="radio"
             aria-checked={elegida}
-            // Volver a tocar la opción elegida la desmarca: elegir es opcional.
-            onClick={() => onCambio(elegida ? '' : o.id)}
+            onClick={() => onCambio(o.id)}
             className={`rounded-xl border px-4 py-3 text-left text-sm transition active:scale-[.99] ${
               elegida
                 ? 'border-salvia bg-salvia text-white'
@@ -29,20 +28,25 @@ function Opciones({ opciones, valor, onCambio, etiquetaGrupo }) {
 }
 
 /**
- * Selección de plato y bebida para cada persona del grupo.
+ * Selección de entrada, plato fuerte y bebida para cada persona del grupo.
  *
- * `elecciones` es un objeto indexado por el `indice` de cada persona
- * (-1 para el titular), y `onCambio(indice, campo, valor)` lo actualiza.
+ * `elecciones` está indexado por el `indice` de cada persona (-1 el titular),
+ * y `onCambio(indice, curso, valor)` lo actualiza.
+ * `incompletas` marca en rojo a quien le falte algo tras intentar enviar.
  */
-export default function SelectorMenu({ invitado, config, elecciones, onCambio }) {
+export default function SelectorMenu({
+  invitado,
+  config,
+  elecciones,
+  onCambio,
+  incompletas = [],
+}) {
   const personas = personasDelGrupo(invitado)
-  const hayBebidas = config.bebidas.length > 0
+  const marcados = new Set(incompletas.map((p) => p.indice))
 
   return (
     <div className="space-y-4">
       {personas.map((persona) => {
-        const platos = platosPara(persona.tipo, config)
-
         // Los bebés no comen ni beben del banquete.
         if (persona.tipo === 'bebe') {
           return (
@@ -55,12 +59,21 @@ export default function SelectorMenu({ invitado, config, elecciones, onCambio })
           )
         }
 
-        if (platos.length === 0 && !hayBebidas) return null
+        const cursosVisibles = CURSOS.filter(
+          (c) => opcionesPara(c.clave, persona.tipo, config).length > 0
+        )
+        if (cursosVisibles.length === 0) return null
 
-        const eleccion = elecciones[persona.indice] || { plato: '', bebida: '' }
+        const eleccion = elecciones[persona.indice] || {}
+        const incompleta = marcados.has(persona.indice)
 
         return (
-          <div key={persona.indice} className="rounded-2xl border border-arena p-4">
+          <div
+            key={persona.indice}
+            className={`rounded-2xl border p-4 ${
+              incompleta ? 'border-red-400 bg-red-50/50' : 'border-arena'
+            }`}
+          >
             <p className="font-medium">
               {persona.nombre}
               {persona.tipo === 'nino' && (
@@ -70,37 +83,23 @@ export default function SelectorMenu({ invitado, config, elecciones, onCambio })
               )}
             </p>
 
-            {platos.length > 0 && (
-              <div className="mt-3">
-                <p className="mb-2 text-sm text-carbon/60">Plato</p>
+            {cursosVisibles.map((curso) => (
+              <div key={curso.clave} className="mt-4">
+                <p className="mb-2 text-sm text-carbon/60">
+                  {curso.etiqueta}
+                  {!eleccion[curso.clave] && <span className="ml-1 text-red-600">*</span>}
+                </p>
                 <Opciones
-                  opciones={platos}
-                  valor={eleccion.plato}
-                  onCambio={(v) => onCambio(persona.indice, 'plato', v)}
-                  etiquetaGrupo={`Plato de ${persona.nombre}`}
+                  opciones={opcionesPara(curso.clave, persona.tipo, config)}
+                  valor={eleccion[curso.clave] || ''}
+                  onCambio={(v) => onCambio(persona.indice, curso.clave, v)}
+                  etiquetaGrupo={`${curso.etiqueta} de ${persona.nombre}`}
                 />
               </div>
-            )}
-
-            {hayBebidas && (
-              <div className="mt-4">
-                <p className="mb-2 text-sm text-carbon/60">Bebida</p>
-                <Opciones
-                  opciones={config.bebidas}
-                  valor={eleccion.bebida}
-                  onCambio={(v) => onCambio(persona.indice, 'bebida', v)}
-                  etiquetaGrupo={`Bebida de ${persona.nombre}`}
-                />
-              </div>
-            )}
+            ))}
           </div>
         )
       })}
-
-      <p className="text-center text-xs text-carbon/50">
-        Puedes confirmar sin elegir y decírnoslo después. Toca de nuevo una
-        opción para desmarcarla.
-      </p>
     </div>
   )
 }

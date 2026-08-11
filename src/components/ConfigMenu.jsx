@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { nuevoId } from '../lib/menu.js'
+import { CURSOS, nuevoId } from '../lib/menu.js'
 
 /** Lista editable de opciones (platos o bebidas). */
 function EditorLista({ titulo, ayuda, opciones, onCambio }) {
@@ -55,10 +55,12 @@ function EditorLista({ titulo, ayuda, opciones, onCambio }) {
 }
 
 export default function ConfigMenu({ config, onGuardar, onCancelar, guardando }) {
-  const [platos, setPlatos] = useState(config.platos)
-  const [platosNinos, setPlatosNinos] = useState(config.platosNinos)
-  const [bebidas, setBebidas] = useState(config.bebidas)
+  // Un estado por lista, derivado de CURSOS: añadir un tiempo nuevo en
+  // lib/menu.js hace que aparezca aquí solo.
+  const [listas, setListas] = useState(config)
   const [error, setError] = useState('')
+
+  const cambiar = (campo, opciones) => setListas((prev) => ({ ...prev, [campo]: opciones }))
 
   function enviar(e) {
     e.preventDefault()
@@ -66,22 +68,26 @@ export default function ConfigMenu({ config, onGuardar, onCancelar, guardando })
     // Descartamos las opciones que quedaron sin nombre, en vez de guardarlas
     // vacías y que el invitado vea un botón en blanco.
     const limpiar = (lista) =>
-      lista
-        .map((o) => ({ id: o.id, nombre: o.nombre.trim() }))
+      (lista || [])
+        .map((o) => ({ id: o.id, nombre: (o.nombre || '').trim() }))
         .filter((o) => o.nombre.length > 0)
 
-    const datos = {
-      platos: limpiar(platos),
-      platosNinos: limpiar(platosNinos),
-      bebidas: limpiar(bebidas),
-    }
-
-    const nombres = [...datos.platos, ...datos.platosNinos, ...datos.bebidas].map((o) =>
-      o.nombre.toLowerCase()
+    const datos = Object.fromEntries(
+      Object.keys(config).map((campo) => [campo, limpiar(listas[campo])])
     )
-    if (new Set(nombres).size !== nombres.length) {
-      setError('Hay dos opciones con el mismo nombre. Los invitados no podrían distinguirlas.')
-      return
+
+    // Dos opciones con el mismo nombre dentro del mismo tiempo serían
+    // indistinguibles para el invitado. Entre tiempos distintos sí se permite.
+    for (const curso of CURSOS) {
+      const juntas = [
+        ...datos[curso.campo],
+        ...(curso.campoNinos !== curso.campo ? datos[curso.campoNinos] : []),
+      ]
+      const nombres = juntas.map((o) => o.nombre.toLowerCase())
+      if (new Set(nombres).size !== nombres.length) {
+        setError(`Hay dos opciones con el mismo nombre en "${curso.etiqueta}".`)
+        return
+      }
     }
 
     setError('')
@@ -96,18 +102,25 @@ export default function ConfigMenu({ config, onGuardar, onCancelar, guardando })
       </p>
 
       <div className="space-y-4">
-        <EditorLista
-          titulo="Platos de adulto"
-          opciones={platos}
-          onCambio={setPlatos}
-        />
-        <EditorLista
-          titulo="Platos infantiles"
-          ayuda="Se muestran solo a quien esté marcado como Niño. Los bebés no eligen."
-          opciones={platosNinos}
-          onCambio={setPlatosNinos}
-        />
-        <EditorLista titulo="Bebidas" opciones={bebidas} onCambio={setBebidas} />
+        {CURSOS.map((curso, i) => (
+          <div key={curso.clave} className="space-y-3">
+            <EditorLista
+              titulo={`${i + 1}. ${curso.etiqueta}`}
+              opciones={listas[curso.campo] || []}
+              onCambio={(v) => cambiar(curso.campo, v)}
+            />
+
+            {/* Las bebidas comparten lista entre adultos y niños. */}
+            {curso.campoNinos !== curso.campo && (
+              <EditorLista
+                titulo={`${i + 1}b. ${curso.etiqueta} — infantil`}
+                ayuda="Solo para quien esté marcado como Niño. Déjalo vacío si comen lo mismo que los adultos."
+                opciones={listas[curso.campoNinos] || []}
+                onCambio={(v) => cambiar(curso.campoNinos, v)}
+              />
+            )}
+          </div>
+        ))}
       </div>
 
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}

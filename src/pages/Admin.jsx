@@ -16,17 +16,19 @@ import Cargando from '../components/Cargando.jsx'
 import Modal from '../components/Modal.jsx'
 import FormularioInvitado from '../components/FormularioInvitado.jsx'
 import ConfigMenu from '../components/ConfigMenu.jsx'
+import SelectorMenu from '../components/SelectorMenu.jsx'
 import {
+  aMenuGuardable,
   COLECCION_CONFIG,
   CONFIG_VACIA,
+  CURSOS,
   DOC_CONFIG,
   eleccionDe,
   faltaElegir,
   hayMenuConfigurado,
   leerConfig,
-  nombreOpcion,
   personasDelGrupo,
-  platosPara,
+  resumenEleccion,
   resumenMenu,
 } from '../lib/menu.js'
 import {
@@ -121,6 +123,7 @@ export default function Admin() {
   const [filtroConfirmacion, setFiltroConfirmacion] = useState('Todos')
   const [filtroCategoria, setFiltroCategoria] = useState('Todos')
   const [filtroMenu, setFiltroMenu] = useState('Todos')
+  const [pagina, setPagina] = useState(1)
 
   // Estado de los diálogos.
   const [creando, setCreando] = useState(false)
@@ -133,6 +136,9 @@ export default function Admin() {
 
   const [config, setConfig] = useState(CONFIG_VACIA)
   const [editandoMenu, setEditandoMenu] = useState(false)
+  // Invitado al que le estamos cambiando el menú a mano.
+  const [menuDe, setMenuDe] = useState(null)
+  const [eleccionesEdit, setEleccionesEdit] = useState({})
 
   useEffect(() => {
     const unsub = onSnapshot(
@@ -225,6 +231,20 @@ export default function Admin() {
 
   const menu = useMemo(() => resumenMenu(invitados, config), [invitados, config])
 
+  // ---------- Paginación ----------
+  const POR_PAGINA = 25
+  const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA))
+
+  // Si al filtrar quedan menos páginas de las que había, volvemos a la primera
+  // en vez de dejar al usuario mirando una página vacía.
+  const paginaSegura = Math.min(pagina, totalPaginas)
+  const desde = (paginaSegura - 1) * POR_PAGINA
+  const paginados = filtrados.slice(desde, desde + POR_PAGINA)
+
+  useEffect(() => {
+    setPagina(1)
+  }, [busqueda, filtroGrupo, filtroConfirmacion, filtroCategoria, filtroMenu])
+
   // ---------- Acciones ----------
 
   async function crear(datos) {
@@ -289,6 +309,41 @@ export default function Admin() {
     }
   }
 
+  /** Abre el editor de menú de un invitado, precargado con lo que ya eligió. */
+  function abrirMenuDe(invitado) {
+    const previas = {}
+    for (const p of personasDelGrupo(invitado)) {
+      previas[p.indice] = eleccionDe(invitado, p.indice)
+    }
+    setEleccionesEdit(previas)
+    setMenuDe(invitado)
+  }
+
+  /**
+   * Guarda el menú que los novios ajustaron a mano.
+   * A diferencia del invitado, aquí NO se exige completarlo: puede que solo
+   * sepan lo que cambió una persona del grupo.
+   */
+  async function guardarMenuDeInvitado() {
+    setGuardando(true)
+    setError('')
+    try {
+      await updateDoc(doc(db, COLECCION, menuDe.id), {
+        menu: aMenuGuardable(eleccionesEdit[-1]),
+        menuAcompanantes: personasDelGrupo(menuDe)
+          .filter((p) => !p.esTitular)
+          .sort((a, b) => a.indice - b.indice)
+          .map((p) => aMenuGuardable(eleccionesEdit[p.indice])),
+      })
+      setMenuDe(null)
+    } catch (e) {
+      console.error(e)
+      setError('No se pudo guardar el menú de este invitado.')
+    } finally {
+      setGuardando(false)
+    }
+  }
+
   async function copiarLink(id) {
     try {
       await navigator.clipboard.writeText(linkDe(id))
@@ -315,7 +370,7 @@ export default function Admin() {
       'Confirmacion',
       'Restricciones',
       'Mensaje',
-      'Entrada registrada',
+      'Acceso registrado',
       'Link RSVP',
     ]
     const escapar = (v) => `"${(v ?? '').toString().replace(/"/g, '""')}"`
@@ -332,15 +387,10 @@ export default function Admin() {
         ac.ninos.length,
         nombresAcompanantes(i).join(' / '),
         // "Ana: Pollo + Tinto / Leo: Nuggets" — una linea por persona.
+        // "Ana: Crema · Pollo · Tinto / Leo: Nuggets" — una entrada por persona.
         personasDelGrupo(i)
           .filter((p) => p.tipo !== 'bebe')
-          .map((p) => {
-            const e = eleccionDe(i, p.indice)
-            const plato = nombreOpcion(e.plato, platosPara(p.tipo, config))
-            const bebida = nombreOpcion(e.bebida, config.bebidas)
-            const elegido = [plato, bebida].filter(Boolean).join(' + ')
-            return `${p.nombre}: ${elegido || 'sin elegir'}`
-          })
+          .map((p) => `${p.nombre}: ${resumenEleccion(i, p, config) || 'sin elegir'}`)
           .join(' / '),
         i.mesa,
         i.confirmacion || 'Pendiente',
@@ -427,46 +477,44 @@ export default function Admin() {
         <section className="mt-3 rounded-2xl border border-arena bg-white px-5 py-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-sm font-medium">Menú elegido</h2>
-            {(menu.sinPlato > 0 || menu.sinBebida > 0) && (
+            {(menu.faltantes.entrada > 0 ||
+              menu.faltantes.plato > 0 ||
+              menu.faltantes.bebida > 0) && (
               <button
                 onClick={() => setFiltroMenu(filtroMenu === 'faltan' ? 'Todos' : 'faltan')}
                 className="text-xs text-oro underline"
               >
-                {menu.sinPlato} sin plato elegido — {filtroMenu === 'faltan' ? 'ver todos' : 'ver quiénes'}
+                Hay elecciones pendientes —{' '}
+                {filtroMenu === 'faltan' ? 'ver todos' : 'ver quiénes'}
               </button>
             )}
           </div>
 
-          <div className="mt-3 grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="mb-1 text-xs uppercase tracking-wide text-carbon/40">Platos</p>
-              {menu.platos.length === 0 && (
-                <p className="text-sm text-carbon/40">Nadie ha elegido todavía.</p>
-              )}
-              <ul className="space-y-1 text-sm">
-                {menu.platos.map((p) => (
-                  <li key={p.id} className="flex justify-between gap-4">
-                    <span className="text-carbon/70">{p.nombre}</span>
-                    <strong className="tabular-nums">{p.n}</strong>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <p className="mb-1 text-xs uppercase tracking-wide text-carbon/40">Bebidas</p>
-              {menu.bebidas.length === 0 && (
-                <p className="text-sm text-carbon/40">Nadie ha elegido todavía.</p>
-              )}
-              <ul className="space-y-1 text-sm">
-                {menu.bebidas.map((b) => (
-                  <li key={b.id} className="flex justify-between gap-4">
-                    <span className="text-carbon/70">{b.nombre}</span>
-                    <strong className="tabular-nums">{b.n}</strong>
-                  </li>
-                ))}
-              </ul>
-            </div>
+          <div className="mt-3 grid gap-4 sm:grid-cols-3">
+            {CURSOS.map((curso) => (
+              <div key={curso.clave}>
+                <p className="mb-1 text-xs uppercase tracking-wide text-carbon/40">
+                  {curso.etiqueta}
+                </p>
+                {menu[curso.clave].length === 0 ? (
+                  <p className="text-sm text-carbon/40">Nadie ha elegido todavía.</p>
+                ) : (
+                  <ul className="space-y-1 text-sm">
+                    {menu[curso.clave].map((o) => (
+                      <li key={o.id} className="flex justify-between gap-4">
+                        <span className="text-carbon/70">{o.nombre}</span>
+                        <strong className="tabular-nums">{o.n}</strong>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {menu.faltantes[curso.clave] > 0 && (
+                  <p className="mt-1 text-xs text-oro">
+                    {menu.faltantes[curso.clave]} sin elegir
+                  </p>
+                )}
+              </div>
+            ))}
           </div>
 
           {menu.bebes > 0 && (
@@ -523,7 +571,10 @@ export default function Admin() {
       </section>
 
       <p className="mt-4 text-sm text-carbon/50">
-        Mostrando {filtrados.length} de {invitados.length}
+        {filtrados.length === 0
+          ? `0 de ${invitados.length}`
+          : `Mostrando ${desde + 1}–${Math.min(desde + POR_PAGINA, filtrados.length)} de ${filtrados.length}`}
+        {filtrados.length !== invitados.length && ` (${invitados.length} en total)`}
       </p>
 
       <section className="mt-3 overflow-x-auto rounded-2xl border border-arena bg-white">
@@ -539,12 +590,14 @@ export default function Admin() {
                 <th className="px-4 py-3 font-medium">Menú</th>
               )}
               <th className="px-4 py-3 font-medium">Restricciones</th>
-              <th className="px-4 py-3 font-medium">Entrada</th>
+              {/* "Acceso" y no "Entrada", para no confundirlo con el
+                  primer tiempo del menú. */}
+              <th className="px-4 py-3 font-medium">Acceso</th>
               <th className="px-4 py-3 text-right font-medium">Acciones</th>
             </tr>
           </thead>
           <tbody>
-            {filtrados.map((i) => (
+            {paginados.map((i) => (
               <tr key={i.id} className="border-b border-arena/60 last:border-0">
                 <td className="px-4 py-3">
                   <span className="font-medium">{i.nombre}</span>
@@ -572,17 +625,27 @@ export default function Admin() {
                   </Etiqueta>
                 </td>
                 {hayMenuConfigurado(config) && (
-                  <td className="max-w-[200px] px-4 py-3 text-xs text-carbon/60">
+                  <td className="max-w-[260px] px-4 py-3 text-xs">
                     {i.confirmacion !== 'Si' ? (
                       <span className="text-carbon/30">—</span>
-                    ) : faltaElegir(i, config) ? (
-                      <span className="text-oro">Falta elegir</span>
                     ) : (
-                      personasDelGrupo(i)
-                        .filter((p) => p.tipo !== 'bebe')
-                        .map((p) => nombreOpcion(eleccionDe(i, p.indice).plato, platosPara(p.tipo, config)))
-                        .filter(Boolean)
-                        .join(', ') || <span className="text-carbon/30">—</span>
+                      <ul className="space-y-0.5">
+                        {personasDelGrupo(i)
+                          .filter((p) => p.tipo !== 'bebe')
+                          .map((p) => {
+                            const elegido = resumenEleccion(i, p, config)
+                            return (
+                              <li key={p.indice}>
+                                <span className="text-carbon/50">{p.nombre}:</span>{' '}
+                                {elegido ? (
+                                  <span className="text-carbon/80">{elegido}</span>
+                                ) : (
+                                  <span className="text-oro">falta elegir</span>
+                                )}
+                              </li>
+                            )
+                          })}
+                      </ul>
                     )}
                   </td>
                 )}
@@ -604,6 +667,15 @@ export default function Admin() {
                   >
                     {copiadoId === i.id ? '✓ Copiado' : 'Link'}
                   </button>
+                  {hayMenuConfigurado(config) && (
+                    <button
+                      onClick={() => abrirMenuDe(i)}
+                      className="rounded-lg px-2 py-1 text-xs text-carbon/70 hover:bg-arena"
+                      title="Cambiar lo que va a comer"
+                    >
+                      Menú
+                    </button>
+                  )}
                   <button
                     onClick={() => setEditando(i)}
                     className="rounded-lg px-2 py-1 text-xs text-carbon/70 hover:bg-arena"
@@ -636,6 +708,33 @@ export default function Admin() {
         </table>
       </section>
 
+      {totalPaginas > 1 && (
+        <nav
+          className="mt-4 flex items-center justify-center gap-2"
+          aria-label="Paginación de invitados"
+        >
+          <button
+            onClick={() => setPagina(paginaSegura - 1)}
+            disabled={paginaSegura <= 1}
+            className="btn-secundario px-4 py-2 text-sm"
+          >
+            ← Anterior
+          </button>
+
+          <span className="px-3 text-sm tabular-nums text-carbon/60">
+            Página {paginaSegura} de {totalPaginas}
+          </span>
+
+          <button
+            onClick={() => setPagina(paginaSegura + 1)}
+            disabled={paginaSegura >= totalPaginas}
+            className="btn-secundario px-4 py-2 text-sm"
+          >
+            Siguiente →
+          </button>
+        </nav>
+      )}
+
       <section className="mt-10">
         <h2 className="font-titulo text-2xl">Mensajes</h2>
         <div className="mt-4 space-y-3">
@@ -667,6 +766,44 @@ export default function Admin() {
           onCancelar={() => setEditandoMenu(false)}
           guardando={guardando}
         />
+      </Modal>
+
+      <Modal
+        abierto={Boolean(menuDe)}
+        onCerrar={() => setMenuDe(null)}
+        titulo={`Menú de ${menuDe?.nombre || ''}`}
+      >
+        {menuDe && (
+          <>
+            <p className="mb-4 text-sm text-carbon/60">
+              Cambia lo que va a comer cada quien. Útil cuando te avisan por
+              teléfono. Aquí no hace falta completarlo todo.
+            </p>
+            <SelectorMenu
+              invitado={menuDe}
+              config={config}
+              elecciones={eleccionesEdit}
+              onCambio={(indice, curso, valor) =>
+                setEleccionesEdit((prev) => ({
+                  ...prev,
+                  [indice]: { ...(prev[indice] || {}), [curso]: valor },
+                }))
+              }
+            />
+            <div className="mt-6 flex gap-3">
+              <button onClick={() => setMenuDe(null)} className="btn-secundario flex-1">
+                Cancelar
+              </button>
+              <button
+                onClick={guardarMenuDeInvitado}
+                disabled={guardando}
+                className="btn-primario flex-1"
+              >
+                {guardando ? 'Guardando…' : 'Guardar menú'}
+              </button>
+            </div>
+          </>
+        )}
       </Modal>
 
       <Modal abierto={creando} onCerrar={() => setCreando(false)} titulo="Agregar invitado">

@@ -171,7 +171,7 @@ export default function Scanner() {
   return (
     <main className="mx-auto max-w-md px-4 py-6">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="font-titulo text-2xl">Entrada</h1>
+        <h1 className="font-titulo text-2xl">Acceso</h1>
         <Link to="/admin" className="text-sm text-salviaOscuro underline">
           Volver al panel
         </Link>
