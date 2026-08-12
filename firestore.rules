@@ -5,10 +5,30 @@ service cloud.firestore {
 
     match /invitados/{invitadoId} {
 
-      // El staff (novios) son cualquier usuario autenticado con Firebase Auth.
-      // Como las cuentas se crean a mano en la consola, no hay registro público.
+      // Cualquier usuario autenticado. Las cuentas se crean a mano en la
+      // consola de Firebase, así que no hay registro público.
       function esStaff() {
         return request.auth != null;
+      }
+
+      // Cuenta limitada para quien escanea en la puerta. Mínimo privilegio:
+      // puede leer la lista y marcar accesos, nada más. Si ese celular se
+      // pierde, no se puede borrar a nadie ni alterar confirmaciones.
+      //
+      // Debe coincidir con CORREO_ESCANER en src/lib/roles.js
+      function esEscaner() {
+        return esStaff() && request.auth.token.email == 'escaner@bodallelydrix.com';
+      }
+
+      // Los novios: cualquier cuenta con sesión que no sea la de la puerta.
+      function esNovios() {
+        return esStaff() && !esEscaner();
+      }
+
+      // Lo único que la puerta puede tocar de un invitado.
+      function soloRegistroDeAcceso() {
+        return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['entradaRegistrada', 'fechaEntrada']);
       }
 
       // Un invitado del público solo puede tocar los campos de su confirmación
@@ -69,21 +89,28 @@ service cloud.firestore {
           && d.acompanantes.ninos.size() <= 15;
       }
 
-      // El público confirma; el staff puede editar cualquier cosa
-      // (incluido marcar la entrada desde el escáner).
-      allow update: if esStaff() || (soloCamposDeConfirmacion() && confirmacionValida());
+      // Tres vías de escritura, de más a menos privilegio:
+      //   1. Los novios pueden editar cualquier campo.
+      //   2. La puerta, solo el registro de acceso.
+      //   3. El invitado, solo su confirmación y su menú.
+      allow update: if esNovios()
+        || (esEscaner() && soloRegistroDeAcceso())
+        || (soloCamposDeConfirmacion() && confirmacionValida());
 
-      // Alta y baja de invitados desde el panel: solo con sesión iniciada.
-      allow create: if esStaff() && invitadoValido();
-      allow delete: if esStaff();
+      // Alta y baja de invitados: solo los novios. La puerta no borra a nadie.
+      allow create: if esNovios() && invitadoValido();
+      allow delete: if esNovios();
     }
 
     // Configuración del menú del banquete.
-    // Lectura pública: el invitado necesita ver los platos al confirmar.
-    // No contiene datos personales, solo nombres de platos y bebidas.
+    // Lectura pública: el invitado necesita ver los platos al confirmar; no
+    // contiene datos personales, solo nombres de platos y bebidas.
+    // Escritura solo de los novios: la puerta no cambia el menú de la boda.
     match /configuracion/{documento} {
       allow get: if true;
-      allow list, write: if request.auth != null;
+      allow list: if request.auth != null;
+      allow write: if request.auth != null
+        && request.auth.token.email != 'escaner@bodallelydrix.com';
     }
 
     // Todo lo demás queda cerrado.

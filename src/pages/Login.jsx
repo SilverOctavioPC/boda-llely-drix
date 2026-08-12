@@ -3,6 +3,7 @@ import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import Cargando from '../components/Cargando.jsx'
 import { EVENTO } from '../lib/evento.js'
+import { inicioDe } from '../lib/roles.js'
 
 // Traducimos los códigos de Firebase a algo legible.
 function mensajeDeError(codigo) {
@@ -35,15 +36,16 @@ export default function Login() {
   if (cargando) return <Cargando texto="Verificando sesión…" />
 
   // Si ya hay sesión, no tiene sentido mostrar el formulario.
-  if (usuario) return <Navigate to={location.state?.destino || '/admin'} replace />
+  // La cuenta de la puerta va directa al escáner, no al panel.
+  if (usuario) return <Navigate to={location.state?.destino || inicioDe(usuario)} replace />
 
   async function onSubmit(e) {
     e.preventDefault()
     setEnviando(true)
     setError('')
     try {
-      await entrar(email.trim(), password)
-      navigate(location.state?.destino || '/admin', { replace: true })
+      const credencial = await entrar(email.trim(), password)
+      navigate(location.state?.destino || inicioDe(credencial.user), { replace: true })
     } catch (err) {
       setError(mensajeDeError(err.code))
     } finally {

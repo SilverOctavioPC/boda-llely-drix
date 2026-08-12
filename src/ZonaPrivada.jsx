@@ -31,7 +31,7 @@ export default function ZonaPrivada() {
           <Route
             path="/admin"
             element={
-              <RutaProtegida>
+              <RutaProtegida soloNovios>
                 <Admin />
               </RutaProtegida>
             }

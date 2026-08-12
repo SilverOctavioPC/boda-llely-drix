@@ -90,6 +90,53 @@ http://localhost:5173/admin
 Entra con `novios@bodallelydrix.com` y la contraseña que definiste.
 (No la anoto aquí a propósito: este archivo puede acabar en GitHub.)
 
+Para el escáner usa `escaner@bodallelydrix.com` — ver
+[Las dos cuentas](#las-dos-cuentas).
+
+---
+
+## Las dos cuentas
+
+| Cuenta | Para quién | Qué puede hacer |
+| --- | --- | --- |
+| `novios@bodallelydrix.com` | Ustedes | Todo |
+| `escaner@bodallelydrix.com` | Quien esté en la puerta | Ver la lista y marcar accesos |
+
+La cuenta de la puerta **no puede** editar invitados, ni crearlos, ni borrarlos,
+ni tocar el menú. Al iniciar sesión va directa al escáner y el panel le queda
+cerrado: si intenta abrir `/admin`, se la devuelve al escáner.
+
+Eso no es solo la interfaz escondiendo botones — está en
+[`firestore.rules`](firestore.rules). Aunque alguien llamara a la API a mano,
+Firestore le responde `403`.
+
+### Por qué dos cuentas
+
+Es mínimo privilegio. Si el celular de la puerta se pierde, se queda
+desbloqueado en una mesa o se lo presta a alguien, el daño está acotado a marcar
+accesos. Y al terminar la boda desactivas esa cuenta sin tocar la de ustedes.
+
+### Cómo entra quien escanea, sin teclear nada
+
+**La sesión de Firebase se guarda en el navegador y no caduca.** Así que:
+
+1. Antes del evento, en **el celular que se va a usar en la puerta**, entra a
+   `/admin/scanner` e inicia sesión con la cuenta de escáner.
+2. Esa noche, esa persona solo abre el link y ya está dentro.
+
+Si necesitas cerrar esa sesión, el escáner tiene un botón **Salir** arriba a la
+derecha (solo aparece para esa cuenta; ustedes ven "Volver al panel").
+
+### Si cambias el correo de la puerta
+
+Está escrito en **dos sitios que deben coincidir**:
+
+- [`src/lib/roles.js`](src/lib/roles.js) → `CORREO_ESCANER`
+- [`firestore.rules`](firestore.rules) → dos apariciones
+
+Cambia los dos y **republica las reglas**. Si solo cambias uno, la cuenta nueva
+tendría permisos de novios sin que la interfaz lo refleje.
+
 ---
 
 ## Las tres pantallas
@@ -280,6 +327,8 @@ No en cada cambio. Solo cuando el cambio toca lo que las reglas vigilan.
 | Textos, colores, columnas de la tabla, contenido del CSV | **No** |
 | Quitar un campo | **No** |
 | **Añadir un tiempo al menú** (ej. un cuarto plato) | **No** |
+| **Cambiar el correo de la cuenta de la puerta** | **Sí** |
+| **Dar un permiso nuevo a la cuenta de la puerta** | **Sí** |
 
 Lo del menú merece explicación: añadir tiempos **no** requiere tocar reglas
 porque todos viven dentro de los campos `menu` y `menuAcompanantes`, que ya
@@ -368,6 +417,15 @@ Corre `npm run verificar`. Si dice que la colección tiene 0 documentos, te falt
 Las reglas publicadas son anteriores al menú. Republica
 [`firestore.rules`](firestore.rules): necesita `menu` y `menuAcompanantes` en la
 lista blanca, y el bloque `match /configuracion/{documento}`.
+
+**El escáner dice que no tiene permiso al marcar un acceso**
+Las reglas publicadas son anteriores a la separación de roles, o el correo de la
+cuenta no coincide con el de `firestore.rules`. Comprueba que el usuario que
+inició sesión es exactamente `escaner@bodallelydrix.com`.
+
+**La cuenta de la puerta puede borrar invitados**
+Estás con las reglas viejas, donde cualquier sesión tenía permisos totales.
+Republica [`firestore.rules`](firestore.rules) — es el bloque `esNovios()`.
 
 **El botón "Menú" no aparece en las filas**
 No hay menú configurado todavía. Créalo con el botón **Menú** de arriba; en

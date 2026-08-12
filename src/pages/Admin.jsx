@@ -11,6 +11,7 @@ import {
   updateDoc,
 } from 'firebase/firestore'
 import { db, COLECCION } from '../lib/firebase.js'
+import { normalizar } from '../lib/texto.js'
 import { useAuth } from '../context/AuthContext.jsx'
 import Cargando from '../components/Cargando.jsx'
 import Modal from '../components/Modal.jsx'
@@ -38,16 +39,6 @@ import {
   resumenAcompanantes,
   totalPersonas,
 } from '../lib/acompanantes.js'
-
-/** Quita acentos y baja a minúsculas para que la búsqueda sea tolerante. */
-function normalizar(texto) {
-  return (texto || '')
-    .toString()
-    .normalize('NFD')
-    .replace(/[^a-zA-Z0-9 ]/g, '')
-    .toLowerCase()
-    .trim()
-}
 
 const linkDe = (id) => `${window.location.origin}/rsvp/${id}`
 

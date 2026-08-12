@@ -17,8 +17,9 @@ Para el uso diario mira [GUIA.md](GUIA.md); para la instalación,
 | Sitio en producción | https://boda-llely-drix.vercel.app |
 | Firebase | Proyecto `boda-llely-drix`, plan Spark (gratis), región `nam5` |
 | Reglas de Firestore | **Publicadas y verificadas** end-to-end |
-| Invitados en la base | **12**: 11 de prueba + 1 real que creaste a mano |
-| Menú configurado | Plato fuerte (2 opciones) y bebidas (2). Sin entradas ni postres |
+| Invitados en la base | **11 de prueba** (la base se limpió y se resembró) |
+| Menú configurado | Los 4 tiempos, con opciones de ejemplo para probar |
+| Perfiles de acceso | Novios (todo) y Escáner (solo marcar accesos) |
 
 Node está instalado en modo portable en
 `C:\Users\CEJA\AppData\Local\nodejs-portable\`, ya en el `Path` de usuario. Si
@@ -55,14 +56,37 @@ limiteConfirmacion: 'Por definir', // se muestra en la página del invitado
 
 Mientras digan "Por definir", esas líneas no aparecen en la invitación.
 
-### 3. Probar el escáner en el celular ⚠️
+### 3. Crear la cuenta de la puerta
+
+Firebase Console → **Authentication → Users → Agregar usuario**:
+
+```
+escaner@bodallelydrix.com
+```
+
+Ponle una contraseña distinta de la de novios. Esa cuenta ya está limitada en
+las reglas: puede ver la lista y marcar accesos, pero **no** puede editar, ni
+crear, ni borrar invitados, ni tocar el menú. Al iniciar sesión va directa al
+escáner; el panel le queda cerrado.
+
+**Inicia sesión con ella una vez en el celular que vayan a usar en la puerta.**
+La sesión se guarda en el navegador y no caduca, así que esa noche esa persona
+solo abre el link y escanea, sin teclear nada.
+
+Después de la boda, desactiva la cuenta desde la misma pantalla.
+
+> Si cambias ese correo, cámbialo también en
+> [`src/lib/roles.js`](src/lib/roles.js) **y** en
+> [`firestore.rules`](firestore.rules), y republica las reglas.
+
+### 4. Probar el escáner en el celular ⚠️
 
 **Es lo único que no se puede probar en local y es lo que vas a usar en la
 puerta.** La cámara del navegador exige HTTPS; en `192.168.x.x:5173` no funciona
 nunca.
 
 1. Entra desde el celular a https://boda-llely-drix.vercel.app/admin/scanner
-2. Inicia sesión con `novios@bodallelydrix.com`
+2. Inicia sesión con `escaner@bodallelydrix.com` (la cuenta del paso anterior)
 3. Concede el permiso de cámara
 4. Escanea el QR de un invitado de prueba que ya confirmó y comprueba los tres
    resultados:
@@ -76,7 +100,7 @@ nunca.
 Hazlo con el celular concreto que vayan a usar ese día, y con la batería y el
 brillo como estarán en el evento.
 
-### 4. Corregir nombres en el Excel (antes de migrar)
+### 5. Corregir nombres en el Excel (antes de migrar)
 
 En **Lista Llely** hay ~15 filas sin nombre propio: `ESPOSA`, `ESPOSO`,
 `GEMELAS`, `GEMELA .`, `PAREJA DE IVÁN`, `ESPOSA DE ALBERTO`, `AMIGA ALBERTO`,
@@ -94,7 +118,7 @@ Otra opción: dejarlos fuera del Excel y sumarlos como **acompañantes** de la
 persona a la que van pegados. Encaja mejor con el modelo, porque un acompañante
 no necesita nombre ni link propio.
 
-### 5. Migrar los 210 invitados reales
+### 6. Migrar los 210 invitados reales
 
 Solo cuando estés conforme con cómo funciona todo, porque **genera los links
 definitivos** y a partir de ahí cambiarlos es un lío.
@@ -121,7 +145,7 @@ distintas con links distintos.
 
 `npm run migrar` se niega a correr si ya hay datos, para no duplicar.
 
-### 6. Repasar antes del día
+### 7. Repasar antes del día
 
 - Un invitado real abre su link, confirma y le sale el QR.
 - El panel refleja su confirmación en tiempo real.
@@ -133,12 +157,6 @@ distintas con links distintos.
 ## Ideas que quedaron en el aire
 
 Ninguna es necesaria; se hablaron y no se hicieron.
-
-**Separar permisos por cuenta.** Hoy cualquier cuenta con sesión puede ver la
-lista completa, editarla y **borrar invitados**. Si creas
-`escaner@bodallelydrix.com` para quien esté en la puerta, esa cuenta tendría los
-mismos poderes que ustedes. Se puede limitar en las reglas para que solo pueda
-marcar accesos.
 
 **Menú obligatorio también en el servidor.** Hoy se valida en el navegador. Un
 invitado con conocimientos técnicos podría confirmar sin elegir llamando a la

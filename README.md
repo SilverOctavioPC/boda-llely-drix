@@ -293,6 +293,21 @@ Colección `configuracion`, documento `menu`:
   `fechaConfirmacion`. No puede tocar su nombre ni marcarse la entrada.
 - Crear y borrar invitados exige sesión iniciada, y el alta valida nombre,
   grupo y confirmación antes de aceptarse.
+- **Dos perfiles con permisos distintos**, por mínimo privilegio:
+
+  | | Novios | Escáner (puerta) |
+  | --- | --- | --- |
+  | Ver la lista | Sí | Sí |
+  | Marcar accesos | Sí | Sí |
+  | Editar invitados | Sí | **No** |
+  | Crear y borrar | Sí | **No** |
+  | Cambiar el menú | Sí | **No** |
+
+  El rol se decide por el correo de la cuenta (`escaner@bodallelydrix.com`),
+  definido a la vez en `firestore.rules` y en
+  [`src/lib/roles.js`](src/lib/roles.js). Si cambias uno, cambia el otro.
+  La app oculta lo que esa cuenta no puede hacer, pero **quien lo impide de
+  verdad son las reglas**, no el navegador.
 - **Un invitado no puede regalarse lugares de más.** Sus elecciones de menú van
   en `menuAcompanantes`, una lista separada de `acompanantes`. Si estuvieran
   dentro, para dejarle elegir habría que darle permiso de escritura sobre
@@ -305,10 +320,6 @@ Colección `configuracion`, documento `menu`:
 
 **No protege (y conviene tenerlo claro):**
 
-- **Todas las cuentas tienen los mismos permisos.** Las reglas distinguen entre
-  "autenticado" y "no autenticado", no entre roles. Si creas una cuenta aparte
-  para quien escanea en la puerta, esa cuenta también puede ver la lista
-  completa, editarla y borrar invitados.
 - **La obligatoriedad del menú se valida en el navegador, no en las reglas.**
   Alguien con conocimientos técnicos podría confirmar sin elegir llamando a la
   API directamente. Replicarlo en las reglas obligaría a duplicar ahí toda la
