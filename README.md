@@ -6,6 +6,9 @@ Sistema web para confirmar asistencia y controlar la entrada el día del evento.
 - **`/admin`** — panel privado de los novios.
 - **`/admin/scanner`** — escáner de QR para la puerta.
 
+> 📋 **[PENDIENTES.md](PENDIENTES.md)** — qué falta por hacer y en qué orden.
+> **Empieza por aquí si retomas el proyecto.**
+>
 > 📖 **[GUIA.md](GUIA.md)** — cómo arrancar el servidor, links de prueba,
 > comandos y problemas comunes. Este README es solo la instalación inicial.
 
