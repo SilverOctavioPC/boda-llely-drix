@@ -28,11 +28,59 @@ function Opciones({ opciones, valor, onCambio, etiquetaGrupo }) {
 }
 
 /**
- * Selección de entrada, plato fuerte y bebida para cada persona del grupo.
- *
- * `elecciones` está indexado por el `indice` de cada persona (-1 el titular),
- * y `onCambio(indice, curso, valor)` lo actualiza.
- * `incompletas` marca en rojo a quien le falte algo tras intentar enviar.
+ * El menú de UNA persona. Es la pieza que comparten el asistente paso a paso
+ * de la página del invitado y la vista completa del panel.
+ */
+export function MenuDePersona({
+  persona,
+  config,
+  eleccion = {},
+  onCambio,
+  incompleta = false,
+  mostrarNombre = true,
+  conMarco = true,
+}) {
+  const cursos = CURSOS.filter((c) => opcionesPara(c.clave, persona.tipo, config).length > 0)
+  if (cursos.length === 0) return null
+
+  const marco = conMarco
+    ? `rounded-2xl border p-4 ${incompleta ? 'border-red-400 bg-red-50/50' : 'border-arena'}`
+    : ''
+
+  return (
+    <div className={marco}>
+      {mostrarNombre && (
+        <p className="font-medium">
+          {persona.nombre}
+          {persona.tipo === 'nino' && (
+            <span className="ml-2 rounded-full bg-oro/15 px-2 py-0.5 text-xs text-oro">
+              menú infantil
+            </span>
+          )}
+        </p>
+      )}
+
+      {cursos.map((curso) => (
+        <div key={curso.clave} className={mostrarNombre ? 'mt-4' : 'mt-4 first:mt-0'}>
+          <p className="mb-2 text-sm text-carbon/60">
+            {curso.etiqueta}
+            {!eleccion[curso.clave] && <span className="ml-1 text-red-600">*</span>}
+          </p>
+          <Opciones
+            opciones={opcionesPara(curso.clave, persona.tipo, config)}
+            valor={eleccion[curso.clave] || ''}
+            onCambio={(v) => onCambio(curso.clave, v)}
+            etiquetaGrupo={`${curso.etiqueta} de ${persona.nombre}`}
+          />
+        </div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Todas las personas del grupo de una vez. Lo usa el panel, donde los novios
+ * quieren ver y ajustar el grupo completo sin navegar.
  */
 export default function SelectorMenu({
   invitado,
@@ -41,12 +89,11 @@ export default function SelectorMenu({
   onCambio,
   incompletas = [],
 }) {
-  const personas = personasDelGrupo(invitado)
   const marcados = new Set(incompletas.map((p) => p.indice))
 
   return (
     <div className="space-y-4">
-      {personas.map((persona) => {
+      {personasDelGrupo(invitado).map((persona) => {
         // Los bebés no comen ni beben del banquete.
         if (persona.tipo === 'bebe') {
           return (
@@ -59,45 +106,15 @@ export default function SelectorMenu({
           )
         }
 
-        const cursosVisibles = CURSOS.filter(
-          (c) => opcionesPara(c.clave, persona.tipo, config).length > 0
-        )
-        if (cursosVisibles.length === 0) return null
-
-        const eleccion = elecciones[persona.indice] || {}
-        const incompleta = marcados.has(persona.indice)
-
         return (
-          <div
+          <MenuDePersona
             key={persona.indice}
-            className={`rounded-2xl border p-4 ${
-              incompleta ? 'border-red-400 bg-red-50/50' : 'border-arena'
-            }`}
-          >
-            <p className="font-medium">
-              {persona.nombre}
-              {persona.tipo === 'nino' && (
-                <span className="ml-2 rounded-full bg-oro/15 px-2 py-0.5 text-xs text-oro">
-                  menú infantil
-                </span>
-              )}
-            </p>
-
-            {cursosVisibles.map((curso) => (
-              <div key={curso.clave} className="mt-4">
-                <p className="mb-2 text-sm text-carbon/60">
-                  {curso.etiqueta}
-                  {!eleccion[curso.clave] && <span className="ml-1 text-red-600">*</span>}
-                </p>
-                <Opciones
-                  opciones={opcionesPara(curso.clave, persona.tipo, config)}
-                  valor={eleccion[curso.clave] || ''}
-                  onCambio={(v) => onCambio(persona.indice, curso.clave, v)}
-                  etiquetaGrupo={`${curso.etiqueta} de ${persona.nombre}`}
-                />
-              </div>
-            ))}
-          </div>
+            persona={persona}
+            config={config}
+            eleccion={elecciones[persona.indice]}
+            onCambio={(curso, valor) => onCambio(persona.indice, curso, valor)}
+            incompleta={marcados.has(persona.indice)}
+          />
         )
       })}
     </div>

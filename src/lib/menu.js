@@ -114,6 +114,27 @@ export function personasDelGrupo(invitado) {
   return lista
 }
 
+/**
+ * Las personas del grupo a las que hay que preguntarles algo.
+ * Deja fuera a los bebés y a quien no tenga ninguna opción aplicable
+ * (por ejemplo, un niño si no configuraste menú infantil).
+ */
+export function personasQueEligen(invitado, config) {
+  return personasDelGrupo(invitado).filter(
+    (p) =>
+      p.tipo !== 'bebe' &&
+      CURSOS.some((c) => opcionesPara(c.clave, p.tipo, config).length > 0)
+  )
+}
+
+/** ¿Esta persona ya eligió todo lo que le corresponde? */
+export function eleccionCompleta(persona, eleccion = {}, config) {
+  return CURSOS.every((c) => {
+    const opciones = opcionesPara(c.clave, persona.tipo, config)
+    return opciones.length === 0 || Boolean(eleccion[c.clave])
+  })
+}
+
 /** La elección guardada de una persona del grupo. */
 export function eleccionDe(invitado, indice) {
   const m =
@@ -138,14 +159,20 @@ export function nombreOpcion(id, opciones) {
   return o ? o.nombre : '(opción eliminada)'
 }
 
-/** Texto tipo "Crema de elote · Pollo · Vino tinto" para una persona. */
-export function resumenEleccion(invitado, persona, config) {
-  const eleccion = eleccionDe(invitado, persona.indice)
-  return CURSOS.map((c) =>
-    nombreOpcion(eleccion[c.clave], opcionesPara(c.clave, persona.tipo, config))
-  )
+/**
+ * Texto tipo "Crema de elote · Pollo · Pastel · Vino tinto" a partir de una
+ * elección suelta. Sirve tanto para lo ya guardado como para lo que el
+ * invitado acaba de marcar en pantalla.
+ */
+export function textoEleccion(eleccion = {}, tipo, config) {
+  return CURSOS.map((c) => nombreOpcion(eleccion[c.clave], opcionesPara(c.clave, tipo, config)))
     .filter(Boolean)
     .join(' · ')
+}
+
+/** Lo mismo, leyendo la elección ya guardada del invitado. */
+export function resumenEleccion(invitado, persona, config) {
+  return textoEleccion(eleccionDe(invitado, persona.indice), persona.tipo, config)
 }
 
 /**

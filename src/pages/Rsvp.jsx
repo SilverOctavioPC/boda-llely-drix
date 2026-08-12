@@ -12,14 +12,17 @@ import {
   CURSOS,
   DOC_CONFIG,
   eleccionDe,
+  eleccionCompleta,
   hayMenuConfigurado,
   leerConfig,
   opcionesPara,
   personasDelGrupo,
+  personasQueEligen,
   resumenEleccion,
+  textoEleccion,
 } from '../lib/menu.js'
 import Cargando from '../components/Cargando.jsx'
-import SelectorMenu from '../components/SelectorMenu.jsx'
+import AsistenteMenu from '../components/AsistenteMenu.jsx'
 
 const LIMITE_RESTRICCIONES = 300
 const LIMITE_MENSAJE = 500
@@ -97,8 +100,10 @@ export default function Rsvp() {
   const [config, setConfig] = useState(CONFIG_VACIA)
   // Elecciones indexadas por persona: -1 es el titular.
   const [elecciones, setElecciones] = useState({})
-  // Personas a las que les falta algo del menú, tras intentar enviar.
-  const [incompletas, setIncompletas] = useState([])
+  // Paso del asistente de menú. Cuando llega al final del grupo, se muestran
+  // las restricciones, el mensaje y el botón de enviar.
+  const [paso, setPaso] = useState(0)
+  const [errorPaso, setErrorPaso] = useState('')
 
   useEffect(() => {
     let activo = true
@@ -145,30 +150,19 @@ export default function Rsvp() {
   async function guardar() {
     if (!respuesta) return
 
-    // El menú es obligatorio para quien asiste. Se valida aquí, contra las
-    // opciones que realmente le tocan a cada persona de su grupo.
+    // Red de seguridad: el asistente ya no deja avanzar sin elegir, pero
+    // revalidamos por si el grupo cambió mientras la página estaba abierta.
     if (respuesta === 'Si' && hayMenuConfigurado(config)) {
-      const faltan = personasDelGrupo(invitado).filter((persona) => {
-        if (persona.tipo === 'bebe') return false
-        const elegido = elecciones[persona.indice] || {}
-        return CURSOS.some((c) => {
-          const opciones = opcionesPara(c.clave, persona.tipo, config)
-          return opciones.length > 0 && !elegido[c.clave]
-        })
-      })
-
+      const faltan = personasQueEligen(invitado, config).filter(
+        (p) => !eleccionCompleta(p, elecciones[p.indice], config)
+      )
       if (faltan.length > 0) {
-        setIncompletas(faltan)
-        setError(
-          faltan.length === 1
-            ? `Falta elegir el menú de ${faltan[0].nombre}.`
-            : `Falta elegir el menú de: ${faltan.map((p) => p.nombre).join(', ')}.`
-        )
+        setPaso(personasQueEligen(invitado, config).indexOf(faltan[0]))
+        setError(`Falta elegir el menú de ${faltan[0].nombre}.`)
         return
       }
     }
 
-    setIncompletas([])
     setGuardando(true)
     setError('')
     try {
@@ -216,6 +210,52 @@ export default function Rsvp() {
   }
 
   const yaRespondio = invitado.confirmacion === 'Si' || invitado.confirmacion === 'No'
+
+  // ---------- Asistente de menú ----------
+  const conMenu = hayMenuConfigurado(config)
+  const personasMenu = conMenu ? personasQueEligen(invitado, config) : []
+  // Un paso por persona; el último (índice = longitud) es el tramo final
+  // con restricciones, mensaje y el botón de enviar.
+  const enAsistente = respuesta === 'Si' && personasMenu.length > 0 && paso < personasMenu.length
+
+  function avanzar(siguiente) {
+    if (siguiente > paso) {
+      const persona = personasMenu[paso]
+      if (persona && !eleccionCompleta(persona, elecciones[persona.indice], config)) {
+        setErrorPaso('Elige todas las opciones para continuar.')
+        return
+      }
+    }
+    setErrorPaso('')
+    setPaso(Math.max(0, siguiente))
+  }
+
+  /**
+   * Copia la elección de la primera persona al resto del grupo.
+   * Solo copia un tiempo si la opción existe también en la lista del destino:
+   * así el plato de adulto no se le cuela a un niño, pero la bebida —que es
+   * común— sí se propaga.
+   */
+  function aplicarATodos() {
+    const origen = personasMenu[0]
+    const eleccionOrigen = elecciones[origen.indice] || {}
+
+    setElecciones((prev) => {
+      const siguiente = { ...prev }
+      for (const p of personasMenu) {
+        if (p.indice === origen.indice) continue
+        const copia = { ...(siguiente[p.indice] || {}) }
+        for (const curso of CURSOS) {
+          const id = eleccionOrigen[curso.clave]
+          if (!id) continue
+          const disponibles = opcionesPara(curso.clave, p.tipo, config)
+          if (disponibles.some((o) => o.id === id)) copia[curso.clave] = id
+        }
+        siguiente[p.indice] = copia
+      }
+      return siguiente
+    })
+  }
 
   const totalDelGrupo = totalPersonas(invitado)
   const vaAcompanado = totalDelGrupo > 1
@@ -332,73 +372,101 @@ export default function Rsvp() {
             </button>
           </div>
 
-          {respuesta === 'Si' && hayMenuConfigurado(config) && (
+          {/* --- Menú, una persona por pantalla --- */}
+          {enAsistente && (
             <div className="mt-6">
-              <p className="mb-1 text-sm font-medium">
-                {personas.length > 1 ? '¿Qué van a querer?' : '¿Qué vas a querer?'}
+              <p className="mb-3 text-sm font-medium">
+                {personasMenu.length > 1 ? '¿Qué van a querer?' : '¿Qué vas a querer?'}
               </p>
-              <p className="mb-3 text-xs text-carbon/50">
-                Elige entrada, plato fuerte y bebida de cada persona.
-              </p>
-              <SelectorMenu
-                invitado={invitado}
+              <AsistenteMenu
+                personas={personasMenu}
+                paso={paso}
                 config={config}
                 elecciones={elecciones}
-                incompletas={incompletas}
-                onCambio={(indice, campo, valor) =>
+                error={errorPaso}
+                onPaso={avanzar}
+                onAplicarATodos={aplicarATodos}
+                onCambio={(indice, curso, valor) => {
+                  setErrorPaso('')
                   setElecciones((prev) => ({
                     ...prev,
-                    [indice]: { ...(prev[indice] || {}), [campo]: valor },
+                    [indice]: { ...(prev[indice] || {}), [curso]: valor },
                   }))
-                }
+                }}
               />
             </div>
           )}
 
-          {respuesta === 'Si' && (
-            <div className="mt-6">
-              <label htmlFor="restricciones" className="mb-2 block text-sm font-medium">
-                ¿Alguna restricción alimenticia?{' '}
-                <span className="font-normal text-carbon/50">(opcional)</span>
-              </label>
-              <textarea
-                id="restricciones"
-                rows={2}
-                maxLength={LIMITE_RESTRICCIONES}
-                value={restricciones}
-                onChange={(e) => setRestricciones(e.target.value)}
-                placeholder="Vegetariano, alergia a los mariscos, sin gluten…"
-                className="campo resize-none"
-              />
-            </div>
+          {/* --- Tramo final: solo tras pasar por el menú --- */}
+          {!enAsistente && (
+            <>
+              {respuesta === 'Si' && personasMenu.length > 0 && (
+                <div className="mt-6 rounded-xl bg-arena/50 px-4 py-3 text-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <ul className="space-y-1 text-carbon/70">
+                      {personasMenu.map((p) => (
+                        <li key={p.indice}>
+                          <span className="text-carbon">{p.nombre}:</span>{' '}
+                          {textoEleccion(elecciones[p.indice], p.tipo, config)}
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      onClick={() => setPaso(0)}
+                      className="shrink-0 text-xs text-salviaOscuro underline"
+                    >
+                      Cambiar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {respuesta === 'Si' && (
+                <div className="mt-6">
+                  <label htmlFor="restricciones" className="mb-2 block text-sm font-medium">
+                    ¿Alguna restricción alimenticia?{' '}
+                    <span className="font-normal text-carbon/50">(opcional)</span>
+                  </label>
+                  <textarea
+                    id="restricciones"
+                    rows={2}
+                    maxLength={LIMITE_RESTRICCIONES}
+                    value={restricciones}
+                    onChange={(e) => setRestricciones(e.target.value)}
+                    placeholder="Vegetariano, alergia a los mariscos, sin gluten…"
+                    className="campo resize-none"
+                  />
+                </div>
+              )}
+
+              {respuesta && (
+                <div className="mt-4">
+                  <label htmlFor="mensaje" className="mb-2 block text-sm font-medium">
+                    Un mensaje para los novios{' '}
+                    <span className="font-normal text-carbon/50">(opcional)</span>
+                  </label>
+                  <textarea
+                    id="mensaje"
+                    rows={3}
+                    maxLength={LIMITE_MENSAJE}
+                    value={mensaje}
+                    onChange={(e) => setMensaje(e.target.value)}
+                    className="campo resize-none"
+                  />
+                </div>
+              )}
+
+              {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+
+              <button
+                onClick={guardar}
+                disabled={!respuesta || guardando}
+                className="btn-primario mt-6 w-full"
+              >
+                {guardando ? 'Guardando…' : 'Enviar confirmación'}
+              </button>
+            </>
           )}
-
-          {respuesta && (
-            <div className="mt-4">
-              <label htmlFor="mensaje" className="mb-2 block text-sm font-medium">
-                Un mensaje para los novios{' '}
-                <span className="font-normal text-carbon/50">(opcional)</span>
-              </label>
-              <textarea
-                id="mensaje"
-                rows={3}
-                maxLength={LIMITE_MENSAJE}
-                value={mensaje}
-                onChange={(e) => setMensaje(e.target.value)}
-                className="campo resize-none"
-              />
-            </div>
-          )}
-
-          {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
-
-          <button
-            onClick={guardar}
-            disabled={!respuesta || guardando}
-            className="btn-primario mt-6 w-full"
-          >
-            {guardando ? 'Guardando…' : 'Enviar confirmación'}
-          </button>
         </div>
       )}
     </main>
