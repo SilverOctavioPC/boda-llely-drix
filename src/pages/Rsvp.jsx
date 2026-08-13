@@ -65,7 +65,7 @@ function CodigoQR({ invitadoId, nombre }) {
       <div ref={contenedor} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-arena">
         <QRCodeCanvas
           value={invitadoId}
-          size={220}
+          size={260}
           // Máximo contraste y nivel de corrección alto: legible impreso
           // en blanco y negro o desde una pantalla con brillo bajo.
           fgColor="#000000"
@@ -77,8 +77,17 @@ function CodigoQR({ invitadoId, nombre }) {
       <button onClick={descargar} className="btn-secundario mt-4">
         Descargar mi pase
       </button>
+      {/*
+        Casi nadie va a imprimir el pase: lo van a enseñar desde la pantalla, y
+        una pantalla a brillo bajo cuesta de leer. Decirlo aquí ahorra segundos
+        por invitado en la puerta.
+      */}
       <p className="mt-3 max-w-xs text-center text-xs text-carbon/50">
         Guarda una captura de este código. Lo presentarás en la entrada.
+        <br />
+        <span className="mt-1 inline-block font-medium text-carbon/70">
+          Sube el brillo de tu pantalla al mostrarlo.
+        </span>
       </p>
     </div>
   )

@@ -34,6 +34,8 @@ export default function Scanner() {
   // registra una sola vez y no debe re-crearse en cada render.
   const ultimoRef = useRef({ texto: null, cuando: 0 })
   const procesandoRef = useRef(false)
+  // Espeja `resultado` para poder consultarlo desde el callback de la cámara.
+  const hayResultadoRef = useRef(false)
 
   // Toda la lista se mantiene en memoria: así la búsqueda es instantánea y no
   // gasta lecturas de Firestore con cada tecla.
@@ -95,15 +97,25 @@ export default function Scanner() {
     })
   }
 
+  function mostrar(res) {
+    setResultado(res)
+    hayResultadoRef.current = true
+  }
+
+  function cerrarResultado() {
+    setResultado(null)
+    hayResultadoRef.current = false
+  }
+
   async function procesar(invitadoId) {
     try {
       const res = await registrarEntrada(invitadoId)
-      setResultado(res)
+      mostrar(res)
       if (navigator.vibrate) navigator.vibrate(res.tipo === 'valido' ? 80 : [60, 60, 60])
       return res
     } catch (e) {
       console.error(e)
-      setResultado({ tipo: 'noEncontrado' })
+      mostrar({ tipo: 'noEncontrado' })
     }
   }
 
@@ -111,6 +123,14 @@ export default function Scanner() {
     const ahora = Date.now()
     // Ignora relecturas del mismo código y lecturas mientras se procesa otra.
     if (procesandoRef.current) return
+    /*
+      Mientras el resultado está en pantalla, la cámara sigue leyendo pero no
+      la ve nadie: el resultado la tapa entera. Sin esto, el celular del
+      siguiente invitado entrando en cuadro reemplazaría el resultado del
+      anterior sin que el personal lo hubiera confirmado. Se retoma al pulsar
+      "Escanear siguiente".
+    */
+    if (hayResultadoRef.current) return
     if (ultimoRef.current.texto === texto && ahora - ultimoRef.current.cuando < ENFRIAMIENTO_MS) {
       return
     }
@@ -160,7 +180,31 @@ export default function Scanner() {
     scanner
       .start(
         { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        {
+          fps: 15,
+
+          /*
+            El recuadro se adapta al ancho real de la cámara en vez de quedarse
+            en 250px fijos. Con el fijo, en pantallas grandes el invitado tenía
+            que acercar mucho el QR para que cayera dentro.
+          */
+          qrbox: (anchoVisor, altoVisor) => {
+            const lado = Math.floor(Math.min(anchoVisor, altoVisor) * 0.75)
+            return { width: lado, height: lado }
+          },
+
+          /*
+            Usa el detector de códigos del propio navegador cuando existe
+            (Chrome en Android, Safari 17+). Va mucho más rápido que decodificar
+            por JavaScript, que es lo que hacía antes. Donde no exista, la
+            librería vuelve sola a su decodificador.
+
+            Importa sobre todo aquí: casi todos los invitados van a enseñar el
+            QR en la pantalla del celular, y una pantalla brilla, se mueve y
+            refresca — es más difícil de leer que un papel.
+          */
+          experimentalFeatures: { useBarCodeDetectorIfSupported: true },
+        },
         alLeer,
         // Este callback se dispara en cada frame sin código; lo ignoramos.
         () => {}
@@ -232,7 +276,7 @@ export default function Scanner() {
             key={op.id}
             onClick={() => {
               setModo(op.id)
-              setResultado(null)
+              cerrarResultado()
             }}
             aria-pressed={modo === op.id}
             className={`btn border py-2 text-sm ${
@@ -320,11 +364,21 @@ export default function Scanner() {
         </div>
       )}
 
+      {/*
+        El resultado ocupa TODA la pantalla, no un bloque debajo de la cámara.
+        Antes quedaba fuera de vista en el celular: escaneabas y tenías que
+        bajar la mirada para saber si había entrado. En la puerta, con gente
+        esperando, eso no funciona. Ahora el color llena la pantalla y se ve
+        de reojo y a distancia.
+      */}
       {resultado && (
-        <div className={`mt-4 rounded-2xl p-6 text-center ${estilo.caja}`}>
-          <p className="font-titulo text-2xl">{estilo.titulo}</p>
+        <div
+          role="alert"
+          className={`fixed inset-0 z-50 flex flex-col items-center justify-center overflow-y-auto p-6 text-center ${estilo.caja}`}
+        >
+          <p className="font-titulo text-4xl">{estilo.titulo}</p>
 
-          {resultado.nombre && <p className="mt-2 text-lg font-medium">{resultado.nombre}</p>}
+          {resultado.nombre && <p className="mt-3 text-2xl font-medium">{resultado.nombre}</p>}
 
           {/* Lo más importante para quien está en la puerta: cuántos pasan. */}
           {resultado.personas > 1 && (
@@ -360,9 +414,11 @@ export default function Scanner() {
             <p className="mt-1 text-sm opacity-90">Este código no corresponde a ningún invitado.</p>
           )}
 
+          {/* Botón grande: se pulsa con una mano, sin mirar y con prisa. */}
           <button
-            onClick={() => setResultado(null)}
-            className="mt-4 rounded-xl bg-white/20 px-5 py-2 font-medium"
+            onClick={cerrarResultado}
+            autoFocus
+            className="mt-8 w-full max-w-xs rounded-2xl bg-white/25 px-6 py-4 text-lg font-medium active:bg-white/40"
           >
             {modo === 'camara' ? 'Escanear siguiente' : 'Buscar otro'}
           </button>
