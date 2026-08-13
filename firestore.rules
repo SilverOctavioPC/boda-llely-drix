@@ -49,7 +49,8 @@ service cloud.firestore {
       }
 
       // Cuántos acompañantes tiene asignados HOY el invitado.
-      // Tolera el formato antiguo (`acompanantes: []`) de la migración inicial.
+      // Tolera que el campo falte o venga con una forma rara: en ese caso
+      // cuenta 0, que es lo más restrictivo.
       function numAcompanantes() {
         let a = resource.data.get('acompanantes', {});
         return (a is map && a.adultos is list && a.ninos is list)
@@ -82,7 +83,7 @@ service cloud.firestore {
       allow list: if esStaff();
 
       // Validación de un invitado dado de alta desde el panel.
-      // El script de migración usa el Admin SDK y se salta estas reglas.
+      // Los scripts de scripts/ usan el Admin SDK y se saltan estas reglas.
       function invitadoValido() {
         let d = request.resource.data;
         return d.nombre is string && d.nombre.size() > 0 && d.nombre.size() <= 120
