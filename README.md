@@ -14,54 +14,22 @@ Sistema web para confirmar asistencia y controlar la entrada el día del evento.
 
 ---
 
-## ⚠️ Antes de nada: lo que dice el Excel real
+## Cómo entra la lista de invitados
 
-Revisé `Invitados boda.xlsx` celda por celda. Dos cosas no coinciden con lo que
-se asumió al planear el sistema, y conviene saberlas:
+**A mano, desde el panel.** No hay importación automática: se descartó la
+migración desde Excel porque los datos de origen venían demasiado sucios —
+acompañantes escritos de tres formas distintas, filas repetidas para una misma
+familia, y ~15 personas sin nombre propio (`ESPOSA`, `PAREJA DE IVÁN`,
+`GEMELAS`). Dar de alta a mano sale más limpio que arrastrar todo eso y
+corregirlo después, cuando los links ya están repartidos.
 
-**1. El Excel tiene 3 hojas, no 2.** Además de `Lista Llely` (106 invitados) y
-`Lista Drix` (104 invitados) hay una hoja `Confirmaciónes` con totales
-calculados. Esos totales están **desactualizados**: suman 204 personas cuando
-las filas con nombre son 210. El sistema ignora esa hoja y cuenta las filas
-reales.
+Al darlos de alta, lo que más ahorra trabajo es **usar los acompañantes**: una
+familia de cuatro es **un invitado con tres acompañantes**, no cuatro invitados.
+Reciben un solo link y un solo QR que vale por todos, así que mandas un mensaje
+en vez de cuatro y en la puerta entran de una vez.
 
-**2. Los acompañantes están escritos de tres formas incompatibles.** El patrón
-`"Karen Flores +1"` que se usó como ejemplo aparece **solo en 3 filas de todo el
-archivo**. Los demás acompañantes están así:
-
-| Cómo aparece                               | Ejemplo                                                   | Dónde            |
-| ------------------------------------------ | --------------------------------------------------------- | ---------------- |
-| `Nombre +1`                                | `Karen Flores +1`                                         | Drix, 3 filas    |
-| El mismo nombre repetido en filas seguidas | `Joaquín Pérez` ×3 (Hombre / Mujer / Niño 8 años)         | Drix, ~20 filas  |
-| Un parentesco en vez de un nombre          | `ESPOSA`, `PAREJA DE IVÁN`, `Hijo Marisol`, `ITZA ACOMPA` | Llely, ~15 filas |
-
-Esto crea una trampa: agrupar o "deduplicar por nombre único" **borraría
-acompañantes**. La familia de `Joaquín Pérez` pasaría de 3 personas a 1.
-
-**Decisión tomada (acordada con los novios):** se respeta la columna NOMBRE tal
-cual. **Cada fila del Excel = un invitado = un link propio.** No se agrupa, no se
-deduplica, no se cambian mayúsculas ni acentos. 210 filas → 210 invitados.
-
-### Consecuencias prácticas que hay que atender a mano
-
-- **~15 invitados de Lista Llely no tienen nombre propio** (`ESPOSA`, `ESPOSO`,
-  `GEMELAS`, `PELANCHITO`, `AMIGA ALBERTO`…). Su link dirá literalmente
-  _"Hola, ESPOSA"_. **Recomendación:** corrijan esos nombres en el Excel _antes_
-  de correr la migración; después de generar los links, cambiarlos implica
-  regenerar.
-- **Hay nombres repetidos** entre personas distintas (`VICKY` ×2, `ROBERTO` ×2,
-  `MANUEL` ×2, `LILIAN` en ambas listas). Cada una recibe un link diferente. El
-  CSV de salida incluye las columnas `Lista` y `Fila Excel` para saber cuál es
-  cuál al momento de mandarlos por WhatsApp.
-- **La columna Sexo tiene errores** en el origen (`Alejandra Rivas → Hombre`,
-  `Edgar Rivas → Mujer`, `MICHELLE → Hombre`). Se importa tal cual; solo afecta
-  a los conteos por sexo, no al funcionamiento.
-- **5 filas de Drix no tienen Sexo** (`Manuel Rivera`, `Paula Aragon`,
-  `Mónica CA`, `Liz CA`, `Mariano Pérez`). Se importan con `sexo: null`.
-- La columna CONFIRMACIÓN del Excel trae respuestas sueltas en 5 filas. **No se
-  importan como confirmación**: todos arrancan en `Pendiente` para que cada quien
-  responda desde su link. El valor original se guarda en `confirmacionExcel`
-  por si lo quieren consultar.
+Cuando la lista esté completa, `npm run links` genera el CSV con el link de cada
+quien y un mensaje de WhatsApp ya redactado.
 
 ---
 
@@ -133,8 +101,8 @@ npx firebase-tools deploy --only firestore:rules
 O, si prefieres no usar la CLI: copia el contenido de `firestore.rules` en
 **Firebase Console → Firestore → Reglas** y publica.
 
-**Hazlo antes de migrar.** Si dejas la base en modo de prueba, cualquiera puede
-descargar la lista completa de invitados.
+**Hazlo antes de dar de alta a nadie.** Si dejas la base en modo de prueba,
+cualquiera puede descargar la lista completa de invitados.
 
 ### 4b. Comprobar que todo quedó bien
 
@@ -148,15 +116,21 @@ apunten a **proyectos distintos**.
 
 ### 5. Datos de prueba (antes de tocar la lista real)
 
-Para trabajar las tres pantallas sin cargar todavía a los 210 invitados:
+Los scripts de Node hablan con Firestore como administradores, así que necesitan
+su propia credencial. Descárgala en **Configuración del proyecto → Cuentas de
+servicio → Generar nueva clave privada** y guárdala como `serviceAccount.json`
+en la raíz del proyecto — ya está en `.gitignore`, **nunca la subas a git**: se
+salta todas las reglas de seguridad.
+
+Para trabajar las tres pantallas sin dar de alta todavía a nadie real:
 
 ```powershell
 npm run sembrar
 ```
 
-Crea 11 invitados **ficticios** (nombres inventados, ninguno sale del Excel) que
-cubren todos los estados de la interfaz, e imprime el link de RSVP de cada uno
-listo para abrir. Suman **15 personas**, porque dos llevan acompañantes:
+Crea 11 invitados **ficticios** que cubren todos los estados de la interfaz, e
+imprime el link de RSVP de cada uno listo para abrir. Suman **15 personas**,
+porque dos llevan acompañantes:
 
 | Invitado de prueba | Para probar                                       |
 | ------------------ | ------------------------------------------------- |
@@ -179,29 +153,25 @@ npm run limpiar-prueba          # lista lo que borraría
 npm run limpiar-prueba -- --si  # borra de verdad
 ```
 
-`npm run migrar` se niega a correr si detecta datos de prueba y te dice que los
-limpies primero.
+⚠️ **Los invitados que des de alta desde el panel no llevan esa marca**, así que
+`limpiar-prueba` tampoco los borra. Si diste a alguien de alta a mano mientras
+probabas, bórralo tú desde el panel antes de empezar con la lista real.
 
-### 6. Migrar los invitados
+### 6. Dar de alta a los invitados
 
-Descarga la clave de administrador (**Configuración del proyecto → Cuentas de
-servicio → Generar nueva clave privada**), guárdala como `serviceAccount.json`
-en la raíz del proyecto — ya está en `.gitignore`, **nunca la subas a git**.
+Desde **`/admin`**, botón **Agregar invitado**. Al guardar te muestra su link de
+RSVP ya generado, con botón de copiar.
 
-Primero, un ensayo que no escribe nada:
+Una familia se da de alta como **un invitado con acompañantes**, no como varios
+invitados: con los botones `−` y `+` indicas cuántos adultos y cuántos niños
+lleva. Reciben un solo link y un solo QR que vale por todo el grupo.
 
-```powershell
-npm run migrar -- --dry-run
-```
-
-Revisa que diga **106 de Llely y 104 de Drix**. Si cuadra:
+Antes de empezar con la lista real, deja la base vacía:
 
 ```powershell
-npm run migrar
+npm run limpiar-prueba -- --si   # borra los 11 ficticios
+npm run verificar                # debe decir 0 documentos
 ```
-
-El script se niega a correr dos veces si ya hay datos, para no duplicar
-invitados con links nuevos.
 
 ### 7. Generar los links para WhatsApp
 
@@ -209,8 +179,9 @@ invitados con links nuevos.
 npm run links
 ```
 
-Genera `salida/links-rsvp.csv` con `Nombre | Link RSVP | Lista | Fila Excel | …`
+Genera `salida/links-rsvp.csv` con `Nombre | Link RSVP | Lista | Acompanantes | …`
 y una columna **Mensaje WhatsApp** ya redactada, lista para copiar y pegar.
+Se puede correr las veces que haga falta, según vayas añadiendo gente.
 
 ### 8. Desarrollo y despliegue
 
@@ -231,16 +202,14 @@ Personaliza fecha, lugar y nombres en [`src/lib/evento.js`](src/lib/evento.js).
 
 ```js
 {
-  nombre: string,              // tal cual el Excel, sin normalizar
+  nombre: string,
   grupo: 'Llely' | 'Drix',
-  sexo: string | null,
+  sexo: 'Mujer' | 'Hombre' | null,
+  categoria: 'Adulto' | 'Niño' | 'Bebé',
   edad: string | null,         // '3 años', '10 años'…
   mesa: string | null,
 
   confirmacion: 'Si' | 'No' | 'Pendiente',
-  confirmacionExcel: string | null,   // valor original, solo referencia
-  posibleAsistencia: string | null,
-  saveTheDate: string | null,
 
   restricciones: string | null,
   mensaje: string | null,
@@ -264,7 +233,9 @@ Personaliza fecha, lugar y nombres en [`src/lib/evento.js`](src/lib/evento.js).
   // niños. Va SEPARADO de `acompanantes` a propósito — ver Seguridad.
   menuAcompanantes: [{ entrada: 'e1', plato: 'p1', postre: 'd1', bebida: 'b1' }],
 
-  origen: { hoja, fila, numero }   // trazabilidad al Excel
+  // Solo en los invitados que crea `npm run sembrar`. Es lo que permite
+  // borrarlos limpiamente con `npm run limpiar-prueba`.
+  esPrueba?: true
 }
 ```
 
@@ -374,15 +345,14 @@ generan a partir de ahí.
 
 ### Comprobado en ejecución ✅
 
-- **`npm install`** — 420 paquetes, sin conflictos de versiones.
-- **`npm run build`** — compila limpio (84 módulos, ~3 s).
+- **`npm run lint`** — sin avisos. **`npm test`** — 79 tests en verde.
+- **`npm run build`** — compila limpio.
 - **`npm run dev`** — el servidor levanta y responde HTTP 200.
-- **Lectura del Excel** (`npm run migrar -- --dry-run`) — lee **210 invitados:
-  106 de Llely y 104 de Drix**, exactamente lo previsto. Los nombres salen
-  verbatim, incluidos los dobles espacios (`JAVIER  C.`).
-- **Sintaxis de los 6 scripts de Node.**
-- **Separación de bundles** — verificado que el SDK de Firebase Auth ya **no**
-  viaja en el chunk público.
+- **Separación de bundles** — verificado sobre el JavaScript compilado que el
+  SDK de Firebase Auth ya **no** viaja en el chunk público.
+- **El escáner, en el celular de la puerta** — verde, ámbar, rojo por nombre,
+  un grupo de 4 listando a sus acompañantes, y la búsqueda con acentos y sin
+  ellos. Ver [docs/PENDIENTES.md](docs/PENDIENTES.md).
 - **Reglas de Firestore, de punta a punta** — con una sesión real de novios:
   login OK, listar con sesión OK, crear invitado con acompañantes OK. Y sin
   sesión: leer un invitado por su ID 200, listar la colección 403, crear 403.
@@ -394,10 +364,6 @@ generan a partir de ahí.
 - **Despliegue en Vercel** — `/`, `/admin`, `/login`, `/admin/scanner` y
   `/rsvp/:id` responden 200 y sirven la app (hizo falta `vercel.json` con el
   _rewrite_ a `index.html`; sin él, recargar en cualquier ruta daba 404).
-
-El _dry-run_ también detectó **19 nombres repetidos** entre personas distintas
-(`joaquín pérez` ×3, `esposa` ×2, `karen flores +1` ×2, `vicky` ×2…). Cada uno
-recibe su propio link; usa `Lista` + `Fila Excel` del CSV para saber cuál es cuál.
 
 ### Tamaño del bundle
 
@@ -415,13 +381,12 @@ descargaban la librería del escáner y el módulo de autenticación sin usarlos
 
 ### Sin comprobar todavía ⚠️
 
-- **Que un invitado pueda guardar su menú.** Requiere publicar la versión actual
-  de `firestore.rules` (la que añade `menu` y `menuAcompanantes` a la lista
-  blanca). Hasta entonces, confirmar con menú falla con _permission denied_.
-- **La cámara del escáner en un celular real.** Solo se puede probar ya
-  desplegado: el navegador exige HTTPS y en `192.168.x.x` nunca funciona.
-- **La migración real de los 210 invitados.** Se probó a fondo la lectura del
-  Excel (`--dry-run`), no la escritura en Firestore.
+- **Que un invitado real abra su link y guarde su menú de punta a punta.** La
+  lógica está cubierta por los tests y las reglas se probaron con sesión, pero
+  falta el recorrido completo con una persona de verdad.
+- **El día del evento a escala.** Todo lo probado ha sido con 11 invitados
+  ficticios; el conteo del banquete con la lista real conviene cuadrarlo a mano
+  contra el CSV antes de pasárselo al salón.
 
 **Prueben el escáner antes del día del evento**, con un QR real y en el celular
 que van a usar en la puerta. La cámara del navegador exige HTTPS (Vercel lo da)

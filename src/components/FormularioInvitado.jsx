@@ -176,9 +176,9 @@ export default function FormularioInvitado({ inicial, onGuardar, onCancelar, gua
 
       {/*
         Al dar de alta, el titular siempre es un adulto: los niños se suman
-        abajo como acompañantes. El campo solo aparece al EDITAR, porque de la
-        migración del Excel vienen 10 invitados que son niños como titulares
-        (MAGIE de 7 años, LIAM de 3…) y hay que poder corregirlos.
+        abajo como acompañantes, que es como encaja en el modelo. El campo solo
+        aparece al EDITAR, para poder corregir el caso raro en que un niño sí
+        tenga que figurar como titular (por ejemplo, si le mandas el link a él).
       */}
       {editando && (
         <div className="mt-4">

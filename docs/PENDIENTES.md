@@ -62,37 +62,39 @@ limiteConfirmacion: 'Por definir', // se muestra en la página del invitado
 
 Mientras digan "Por definir", esas líneas no aparecen en la invitación.
 
-### 3. Corregir nombres en el Excel (antes de migrar)
+### 3. Dar de alta a los invitados
 
-En **Lista Llely** hay ~15 filas sin nombre propio: `ESPOSA`, `ESPOSO`,
-`GEMELAS`, `GEMELA .`, `PAREJA DE IVÁN`, `ESPOSA DE ALBERTO`, `AMIGA ALBERTO`,
-`MAMA DE LA SRA. CARMEN`, `Hijo Marisol`, `ITZA ACOMPA`, `ILEANA MAMA`,
-`NOVIO DE MARISOL BACHO`, `ESPOSO MARISOL AREDA`, `Tania / amiga`,
-`PELANCHITO`.
+**Se decidió meterlos a mano, no importarlos.** El Excel de origen venía
+demasiado sucio —acompañantes escritos de tres formas distintas, familias
+repartidas en varias filas, ~15 personas sin nombre propio (`ESPOSA`,
+`PAREJA DE IVÁN`, `GEMELAS`)— y arrastrar eso obligaba a corregirlo después,
+con los links ya repartidos. Toda la maquinaria de migración se eliminó.
 
-Su link diría literalmente _"Hola, ESPOSA"_.
-
-**Es más cómodo corregirlos en el Excel antes de migrar.** Después también se
-puede desde el panel con _Editar_, pero si ya mandaste los links, cambiar el
-nombre no cambia el link (eso está bien) — solo es más trabajo manual.
-
-Otra opción: dejarlos fuera del Excel y sumarlos como **acompañantes** de la
-persona a la que van pegados. Encaja mejor con el modelo, porque un acompañante
-no necesita nombre ni link propio.
-
-### 4. Migrar los 210 invitados reales
-
-Solo cuando estés conforme con cómo funciona todo, porque **genera los links
-definitivos** y a partir de ahí cambiarlos es un lío.
+Antes de empezar, deja la base vacía:
 
 ```powershell
 npm run limpiar-prueba -- --si   # borra los 11 ficticios
-npm run migrar -- --dry-run      # debe decir 106 Llely + 104 Drix, sin escribir
-npm run migrar                   # sube los 210
-npm run links                    # genera salida/links-rsvp.csv
+npm run verificar                # debe decir 0 documentos
 ```
 
-Antes de `npm run links`, pon en el `.env` la URL real:
+Si no dice cero, es que queda alguno que diste de alta a mano probando: esos no
+llevan la marca `esPrueba` y hay que borrarlos desde el panel.
+
+Después, `/admin` → **Agregar invitado**.
+
+**Lo que más trabajo ahorra: usar los acompañantes.** Una familia de cuatro es
+**un invitado con tres acompañantes**, no cuatro invitados. Reciben un solo link
+y un solo QR que vale por todo el grupo, así que mandas un mensaje en vez de
+cuatro y en la puerta entran de una vez. Ahí es donde el trabajo manual se
+reduce de verdad.
+
+Nombre y sexo de los acompañantes son opcionales: si no los sabes, el lugar
+cuenta igual. Los que sí escribas aparecen en la puerta al escanear, para
+cotejar con quien tienes delante.
+
+### 4. Generar los links para WhatsApp
+
+Cuando la lista esté completa. Antes, comprueba que el `.env` tiene la URL real:
 
 ```
 BASE_URL=https://boda-llely-drix.vercel.app
@@ -100,12 +102,16 @@ BASE_URL=https://boda-llely-drix.vercel.app
 
 Si no, los links del CSV apuntarán a `localhost` y no le servirán a nadie.
 
-El CSV trae una columna **Mensaje WhatsApp** ya redactada, lista para copiar y
-pegar, y las columnas `Lista` y `Fila Excel` para distinguir a los **19 nombres
-repetidos** (`joaquín pérez` ×3, `vicky` ×2, `manuel` ×2…), que son personas
-distintas con links distintos.
+```powershell
+npm run links
+```
 
-`npm run migrar` se niega a correr si ya hay datos, para no duplicar.
+Genera `salida/links-rsvp.csv` con el link de cada quien y una columna **Mensaje
+WhatsApp** ya redactada, lista para copiar y pegar. Se puede correr las veces que
+haga falta, según vayas añadiendo gente.
+
+Si hay dos personas con el mismo nombre, las columnas `Lista` y `Acompanantes`
+te dicen cuál es cuál.
 
 ### 5. Repasar antes del día
 

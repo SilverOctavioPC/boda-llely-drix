@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/contextoAuth.js'
 import Cargando from '../components/Cargando.jsx'
 import { EVENTO } from '../lib/evento.js'
@@ -24,7 +24,7 @@ function mensajeDeError(codigo) {
 }
 
 export default function Login() {
-  const { usuario, cargando, entrar } = useAuth()
+  const { usuario, cargando, entrar, salir } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -35,9 +35,41 @@ export default function Login() {
 
   if (cargando) return <Cargando texto="Verificando sesión…" />
 
-  // Si ya hay sesión, no tiene sentido mostrar el formulario.
-  // La cuenta de la puerta va directa al escáner, no al panel.
-  if (usuario) return <Navigate to={location.state?.destino || inicioDe(usuario)} replace />
+  /*
+    Con sesión abierta NO se redirige en silencio.
+
+    Antes sí: quien entrara a /login con la sesión del escáner rebotaba al
+    escáner antes de ver el formulario, y /admin también lo devolvía ahí. El
+    resultado era quedarse encerrado en la cuenta de la puerta, sin manera
+    visible de entrar como novios en ese navegador. La sesión de Firebase no
+    caduca, así que el encierro era permanente.
+  */
+  if (usuario) {
+    const inicio = location.state?.destino || inicioDe(usuario)
+    return (
+      <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
+        <div className="mb-8 text-center">
+          <h1 className="font-titulo text-3xl">{EVENTO.novios}</h1>
+          <p className="mt-2 text-sm text-carbon/60">Ya hay una sesión abierta</p>
+        </div>
+
+        <div className="tarjeta text-center">
+          <p className="text-sm text-carbon/60">Estás dentro como</p>
+          <p className="mt-1 break-all font-medium">{usuario.email}</p>
+
+          <button
+            onClick={() => navigate(inicio, { replace: true })}
+            className="btn-primario mt-6 w-full"
+          >
+            Continuar
+          </button>
+          <button onClick={salir} className="btn-secundario mt-3 w-full">
+            Entrar con otra cuenta
+          </button>
+        </div>
+      </main>
+    )
+  }
 
   async function onSubmit(e) {
     e.preventDefault()

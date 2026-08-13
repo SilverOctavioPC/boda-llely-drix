@@ -31,8 +31,6 @@ npm run verificar                # diagnostica .env, serviceAccount.json y conex
 npm run sembrar                  # 11 invitados ficticios (borra los anteriores, imprime links)
 npm run limpiar-prueba           # lista lo que borraría
 npm run limpiar-prueba -- --si   # los borra
-npm run migrar -- --dry-run      # lee el Excel y reporta, sin escribir
-npm run migrar                   # sube los 210 reales
 npm run links                    # genera salida/links-rsvp.csv
 
 npx firebase-tools deploy --only firestore:rules
@@ -75,16 +73,21 @@ ahora 144 kB.
 Colección `invitados`, un documento por persona titular. Colección `configuracion`,
 documento único `menu`.
 
-**Una fila del Excel = un invitado = un link propio.** No se agrupa ni se deduplica por
-nombre: hay 19 nombres repetidos que son personas distintas (`joaquín pérez` ×3), y
-agruparlos borraría acompañantes. `origen: { hoja, fila, numero }` da la trazabilidad.
+**Los invitados se dan de alta a mano desde el panel.** Hubo una importación desde Excel
+y se eliminó: los datos de origen venían con acompañantes escritos de tres formas
+distintas, familias repartidas en varias filas y personas sin nombre propio (`ESPOSA`,
+`PAREJA DE IVÁN`). No la reintroduzcas sin que te lo pidan.
 
 **Los acompañantes no son documentos.** Son lugares que cuelgan del titular, sin link ni
-QR propios; un QR vale por todo el grupo. Nombre, sexo y edad son opcionales.
+QR propios; un QR vale por todo el grupo. Nombre, sexo y edad son opcionales. Es el
+mecanismo que hace viable el alta manual: una familia de cuatro es un invitado con tres
+acompañantes, no cuatro invitados.
 
-**Sexo y Categoría son campos distintos** (`Mujer|Hombre|null` y `Adulto|Niño|Bebé`). El
-Excel los mezclaba en una columna, lo que impedía contar menús infantiles sin perder el
-sexo.
+**Sexo y Categoría son campos distintos** (`Mujer|Hombre|null` y `Adulto|Niño|Bebé`),
+para poder contar menús infantiles sin perder el sexo.
+
+**Puede haber dos personas con el mismo nombre.** Cada una es un documento con su propio
+link; no deduplicar por nombre.
 
 ### Módulos de lógica pura
 
@@ -132,10 +135,13 @@ para que el invitado pudiera elegir habría que darle permiso de escritura sobre
 — y podría editar su link para regalarse lugares. La regla `menuValido()` además rechaza
 listas de menú más largas que sus acompañantes reales. **No las unifiques.**
 
-**2. `CORREO_ESCANER` está duplicado a propósito**, en
-[src/lib/roles.js:17](src/lib/roles.js#L17) y en dos sitios de
-[firestore.rules](firestore.rules). Cambiar uno solo da a esa cuenta permisos de novios
-sin que la interfaz lo refleje. Cambia los tres y **republica las reglas**.
+**2. Solo existen DOS cuentas, y están en una lista blanca duplicada a propósito**:
+`CORREO_NOVIOS` y `CORREO_ESCANER` en [src/lib/roles.js](src/lib/roles.js), y los mismos
+correos escritos en [firestore.rules](firestore.rules). Cualquier otra cuenta no puede
+hacer nada, ni siquiera leer la lista — antes `esNovios()` era "tener sesión y no ser el
+escáner", así que una cuenta creada por error tenía control total. Si cambias un correo,
+cámbialo en los dos archivos y **republica las reglas**;
+[src/lib/reglas.test.js](src/lib/reglas.test.js) falla si se desincronizan.
 
 **3. `allow list` bloqueado para el público** es lo que impide descargar la lista entera.
 `allow get: if true` es necesario para que el invitado abra su link sin login; sin el
@@ -152,13 +158,16 @@ permissions_.
 conteos y el CSV se generan a partir de esa lista. **No requiere tocar reglas**: todo vive
 dentro de `menu` y `menuAcompanantes`, que ya están permitidos.
 
-**6. `leerAcompanantes()` tolera tres formas de datos** (array vacío de la migración
-inicial, `adultos` como número, y la forma actual). No es código muerto: hay documentos
-guardados con las formas antiguas. No lo "limpies".
+**6. `leerAcompanantes()` tolera tres formas de datos** (array vacío suelto, `adultos`
+como número, y la forma actual). Es tolerancia defensiva y cuesta cuatro líneas: un
+documento con una forma rara se lee sin tumbar la puerta el día del evento. Está cubierta
+por tests; no la "limpies".
 
-**7. Los guardas de los scripts son intencionales.** `migrar` se niega a correr si ya hay
-datos o si detecta invitados de prueba. `limpiar-prueba` solo borra documentos con
-`esPrueba: true`. No los elimines para "desbloquear" una ejecución.
+**7. `limpiar-prueba` solo borra documentos con `esPrueba: true`**, marca que únicamente
+pone `npm run sembrar`. **Los invitados creados desde el panel no la llevan**, así que
+sobreviven a `limpiar-prueba` y a `sembrar`. Ya causó un problema: quedó un invitado `x`
+de una prueba manual contando como asistente. Antes de empezar con la lista real hay que
+comprobar con `npm run verificar` que la colección está vacía.
 
 **8. La interfaz esconde, las reglas protegen.** `RutaProtegida` y los botones ocultos son
 comodidad. Cualquier permiso nuevo tiene que existir en `firestore.rules` o no existe.
@@ -215,4 +224,4 @@ cuenta de servicio da acceso total y se salta las reglas.
 
 - [PENDIENTES.md](docs/PENDIENTES.md) — qué falta y en qué orden. **Empieza por aquí.**
 - [GUIA.md](docs/GUIA.md) — uso diario, las dos cuentas, problemas comunes.
-- [README.md](README.md) — instalación desde cero y lo que dice el Excel real.
+- [README.md](README.md) — instalación desde cero y modelo de datos.

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { CORREO_ESCANER } from './roles.js'
+import { CORREO_ESCANER, CORREO_NOVIOS, CORREOS_STAFF } from './roles.js'
 
 /**
  * Guardas sobre firestore.rules.
@@ -18,23 +18,51 @@ const reglas = readFileSync(new URL('../../firestore.rules', import.meta.url), '
 /** El archivo sin comentarios: lo que de verdad evalúa Firestore. */
 const codigo = reglas.replace(/\/\/.*$/gm, '')
 
-describe('el correo de la puerta está sincronizado', () => {
-  it('todos los correos de las reglas son CORREO_ESCANER', () => {
+describe('los correos del staff están sincronizados con roles.js', () => {
+  const correosEnReglas = [...codigo.matchAll(/'([^']*@[^']*)'/g)].map((m) => m[1])
+
+  it('las reglas no mencionan ningún correo fuera de la lista blanca', () => {
     // El rol se decide por correo en dos sitios acoplados a propósito: roles.js
     // (lo que ve el navegador) y firestore.rules (quien manda de verdad).
-    // Cambiar uno solo deja a esa cuenta con permisos de novios sin que la
-    // interfaz lo refleje.
-    const correos = [...codigo.matchAll(/'([^']*@[^']*)'/g)].map((m) => m[1])
+    // Cambiar uno solo deja una cuenta con permisos que la interfaz no refleja.
+    expect(correosEnReglas.length).toBeGreaterThan(0)
+    for (const correo of correosEnReglas) expect(CORREOS_STAFF).toContain(correo)
+  })
 
-    expect(correos.length).toBeGreaterThan(0)
-    for (const correo of correos) expect(correo).toBe(CORREO_ESCANER)
+  it('los dos correos aparecen en las reglas', () => {
+    // Si alguien renombra una cuenta en roles.js y olvida las reglas, esa cuenta
+    // se queda sin permisos —o peor, el correo viejo los conserva.
+    expect(correosEnReglas).toContain(CORREO_NOVIOS)
+    expect(correosEnReglas).toContain(CORREO_ESCANER)
+  })
+
+  it('son cuentas distintas', () => {
+    expect(CORREO_NOVIOS).not.toBe(CORREO_ESCANER)
+  })
+})
+
+describe('solo las dos cuentas conocidas tienen permisos', () => {
+  it('esNovios exige el correo exacto, no "cualquiera que no sea el escáner"', () => {
+    // Esta era la versión anterior: `esStaff() && !esEscaner()`. Con ella,
+    // cualquier cuenta que llegara a existir en el proyecto —creada por error o
+    // por alguien más— tenía control total sobre la lista de invitados.
+    const bloque = codigo.match(/function esNovios\(\)[\s\S]*?\n {6}\}/)[0]
+    expect(bloque).toMatch(/token\.email ==/)
+    expect(bloque).not.toMatch(/!esEscaner\(\)/)
+  })
+
+  it('esStaff son exactamente esas dos y ninguna más', () => {
+    const bloque = codigo.match(/function esStaff\(\)[\s\S]*?\n {6}\}/)[0]
+    expect(bloque).toMatch(/esNovios\(\)\s*\|\|\s*esEscaner\(\)/)
+    // `request.auth != null` a secas volvería a abrir la puerta a cualquiera.
+    expect(bloque).not.toMatch(/request\.auth != null/)
   })
 })
 
 describe('la lista de invitados no es pública', () => {
   it('`allow list` exige sesión', () => {
     // Sin esto, el `allow get: if true` que necesita el invitado para abrir su
-    // link permitiría descargar la colección entera: 210 nombres y teléfonos.
+    // link permitiría descargar la colección entera: la lista de invitados.
     expect(codigo).toMatch(/allow list:\s*if\s+esStaff\(\)/)
     expect(codigo).not.toMatch(/allow list:\s*if\s+true/)
   })
@@ -98,8 +126,18 @@ describe('la cuenta de la puerta tiene el mínimo privilegio', () => {
   })
 
   it('no puede cambiar el menú del banquete', () => {
+    // Escribir el menú es exclusivo de los novios. Se comprueba con el correo
+    // exacto y no con un "!= escáner": así una cuenta de más tampoco podría.
     const bloque = codigo.match(/match \/configuracion\/\{[\s\S]*?\n {4}\}/)[0]
-    expect(bloque).toMatch(/allow write:[\s\S]*email\s*!=\s*'/)
+    expect(bloque).toMatch(new RegExp(`allow write:[\\s\\S]*==\\s*'${CORREO_NOVIOS}'`))
+    // Ojo: `request.auth != null` también lleva "!=", así que se busca
+    // concretamente una comparación de CORREO por desigualdad.
+    expect(bloque).not.toMatch(/email\s*!=/)
+  })
+
+  it('sí puede leer la lista del menú, para mostrarla en la puerta', () => {
+    const bloque = codigo.match(/match \/configuracion\/\{[\s\S]*?\n {4}\}/)[0]
+    expect(bloque).toMatch(new RegExp(`allow list:[\\s\\S]*${CORREO_ESCANER}`))
   })
 })
 

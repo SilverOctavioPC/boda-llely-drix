@@ -11,9 +11,12 @@
  * recibe un único QR que vale por todo el grupo, y al escanearlo entran todos.
  * El nombre y el sexo son opcionales — se puede sumar gente sin conocerlos.
  *
- * Conviven dos formas antiguas, y `leerAcompanantes` las acepta todas:
- *   1. `acompanantes: []`                    (migración inicial del Excel)
+ * `leerAcompanantes` acepta además dos formas que usó el proyecto antes:
+ *   1. `acompanantes: []`                            (lista vacía suelta)
  *   2. `acompanantes: { adultos: 2, ninos: [...] }`  (adultos como número)
+ *
+ * Es tolerancia defensiva y cuesta cuatro líneas: cualquier documento que se
+ * cuele con una de esas formas se lee sin romper la puerta el día del evento.
  */
 
 const vacio = () => ({ nombre: null, sexo: null })

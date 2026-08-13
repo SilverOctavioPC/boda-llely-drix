@@ -260,9 +260,6 @@ export default function Admin() {
     try {
       const ref = await addDoc(collection(db, COLECCION), {
         ...datos,
-        confirmacionExcel: null,
-        posibleAsistencia: null,
-        saveTheDate: null,
         restricciones: null,
         mensaje: null,
         // Si el alta ya viene confirmada, dejamos constancia de cuándo.
@@ -270,7 +267,6 @@ export default function Admin() {
         entradaRegistrada: false,
         fechaEntrada: null,
         // `acompanantes` ya viene dentro de `datos`, desde el formulario.
-        origen: { hoja: 'MANUAL', fila: 0, numero: '' },
       })
       setCreando(false)
       setRecienCreado({ id: ref.id, nombre: datos.nombre })

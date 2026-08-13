@@ -12,7 +12,7 @@ const ID_LECTOR = 'lector-qr'
 // Tiempo que se ignora un mismo código tras leerlo, para que la cámara no
 // dispare la misma verificación decenas de veces por segundo.
 const ENFRIAMIENTO_MS = 3000
-// Con 210 invitados, mostrar más resultados solo obliga a hacer scroll.
+// Con la lista completa, mostrar más resultados solo obliga a hacer scroll.
 const MAX_RESULTADOS = 12
 
 const ESTILOS = {

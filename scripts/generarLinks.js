@@ -11,6 +11,7 @@ import path from 'node:path'
 import { initializeApp, cert } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import { cargarEnv, requerido } from './lib/env.js'
+import { resumenAcompanantes } from '../src/lib/acompanantes.js'
 
 cargarEnv()
 
@@ -45,28 +46,31 @@ async function main() {
 
   const snap = await db.collection(COLECCION).get()
   if (snap.empty) {
-    console.error('\n✕ No hay invitados en Firestore. Corre primero:  npm run migrar')
+    console.error(
+      '\n✕ No hay invitados en Firestore.' +
+        '\n  Dalos de alta desde el panel, o corre  npm run sembrar  para los de prueba.'
+    )
     process.exit(1)
   }
 
   const filas = snap.docs
     .map((d) => ({ id: d.id, ...d.data() }))
-    // Orden igual al del Excel: primero por hoja, luego por fila.
+    // Por lista y, dentro de cada una, alfabéticamente: es el orden en que
+    // resulta cómodo ir mandando los mensajes por WhatsApp.
     .sort((a, b) => {
-      const ha = a.origen?.hoja || ''
-      const hb = b.origen?.hoja || ''
-      if (ha !== hb) return ha.localeCompare(hb, 'es')
-      return (a.origen?.fila || 0) - (b.origen?.fila || 0)
+      const ga = a.grupo || ''
+      const gb = b.grupo || ''
+      if (ga !== gb) return ga.localeCompare(gb, 'es')
+      return (a.nombre || '').localeCompare(b.nombre || '', 'es')
     })
 
   const cabecera = [
     'Nombre',
     'Link RSVP',
     'Lista',
-    'N Excel',
-    'Fila Excel',
     'Sexo',
     'Edad',
+    'Acompanantes',
     'Confirmacion',
     'Mensaje WhatsApp',
   ]
@@ -77,10 +81,9 @@ async function main() {
       f.nombre,
       link,
       f.grupo,
-      f.origen?.numero,
-      f.origen?.fila,
       f.sexo,
       f.edad,
+      resumenAcompanantes(f) || '',
       f.confirmacion,
       plantillaWhatsApp(f.nombre, link),
     ]
@@ -98,8 +101,8 @@ async function main() {
   console.log(`✓ ${filas.length} links generados en:\n  ${destino}`)
   console.log(`\n  Base usada: ${baseUrl}`)
   console.log(
-    '  Si hay nombres repetidos, usa las columnas "Lista" y "Fila Excel"\n' +
-      '  para identificar a cuál de las dos personas corresponde cada link.'
+    '  Si hay dos personas con el mismo nombre, usa las columnas "Lista" y\n' +
+      '  "Acompanantes" para saber a cuál corresponde cada link.'
   )
 }
 

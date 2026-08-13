@@ -161,11 +161,6 @@ async function main() {
     ok(`BASE_URL = ${process.env.BASE_URL}`)
   }
 
-  const excel = process.env.EXCEL_PATH
-  if (!excel) aviso('Falta EXCEL_PATH', 'Solo hace falta para la migración real')
-  else if (!fs.existsSync(excel)) mal(`No existe el Excel: ${excel}`)
-  else ok('Excel encontrado')
-
   const rc = path.resolve(process.cwd(), '.firebaserc')
   if (fs.existsSync(rc)) {
     const contenido = fs.readFileSync(rc, 'utf8')

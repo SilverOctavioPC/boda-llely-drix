@@ -1,9 +1,12 @@
 /**
  * Borra ÚNICAMENTE los invitados marcados con  esPrueba: true .
  *
- * Los invitados reales importados desde el Excel no llevan ese campo, así que
- * este script no los toca. Aun así, muestra qué va a borrar y pide confirmar
- * con --si antes de hacerlo.
+ * Los invitados reales NO llevan ese campo, así que este script no los toca.
+ * Aun así, muestra qué va a borrar y pide confirmar con --si antes de hacerlo.
+ *
+ * OJO: los que des de alta desde el panel tampoco llevan la marca, así que
+ * tampoco se borran aquí. Si diste a alguien de alta a mano mientras probabas,
+ * bórralo tú desde el panel.
  *
  * Uso:
  *   npm run limpiar-prueba          Lista lo que borraría.

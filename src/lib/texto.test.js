@@ -9,13 +9,13 @@ describe('normalizar — buscar en la puerta con prisa', () => {
   })
 
   it('hace que la forma con acento y sin acento se encuentren entre sí', () => {
-    // Los nombres del Excel vienen con acentuación irregular.
+    // Los nombres se dan de alta con acentuación irregular.
     expect(normalizar('Lucía')).toBe(normalizar('Lucia'))
     expect(normalizar('Joaquín Pérez')).toBe(normalizar('JOAQUIN PEREZ'))
   })
 
-  it('colapsa los espacios repetidos del Excel', () => {
-    // Hay nombres como "JAVIER  C." con doble espacio; nadie teclea dos.
+  it('colapsa los espacios repetidos', () => {
+    // Un doble espacio al teclear ("JAVIER  C.") no debe impedir encontrarlo.
     expect(normalizar('JAVIER  C.')).toBe('javier c')
     expect(normalizar('  Ana   López  ')).toBe('ana lopez')
   })

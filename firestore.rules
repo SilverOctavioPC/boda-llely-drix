@@ -5,24 +5,32 @@ service cloud.firestore {
 
     match /invitados/{invitadoId} {
 
-      // Cualquier usuario autenticado. Las cuentas se crean a mano en la
-      // consola de Firebase, así que no hay registro público.
-      function esStaff() {
-        return request.auth != null;
+      // Las DOS únicas cuentas que existen. Se crean a mano en la consola de
+      // Firebase; no hay registro público.
+      //
+      // Es una lista blanca a propósito: cualquier otra cuenta que llegue a
+      // existir no puede hacer nada, ni siquiera leer la lista. Antes `esNovios`
+      // era "tener sesión y no ser el escáner", así que una cuenta creada por
+      // error —o de más— habría tenido control total sobre los invitados.
+      //
+      // Deben coincidir con CORREO_NOVIOS y CORREO_ESCANER en src/lib/roles.js.
+      // Hay un test (src/lib/reglas.test.js) que comprueba que no se desincronicen.
+      function esNovios() {
+        return request.auth != null
+          && request.auth.token.email == 'novios@bodallelydrix.com';
       }
 
       // Cuenta limitada para quien escanea en la puerta. Mínimo privilegio:
       // puede leer la lista y marcar accesos, nada más. Si ese celular se
       // pierde, no se puede borrar a nadie ni alterar confirmaciones.
-      //
-      // Debe coincidir con CORREO_ESCANER en src/lib/roles.js
       function esEscaner() {
-        return esStaff() && request.auth.token.email == 'escaner@bodallelydrix.com';
+        return request.auth != null
+          && request.auth.token.email == 'escaner@bodallelydrix.com';
       }
 
-      // Los novios: cualquier cuenta con sesión que no sea la de la puerta.
-      function esNovios() {
-        return esStaff() && !esEscaner();
+      // Cualquiera de las dos cuentas reconocidas.
+      function esStaff() {
+        return esNovios() || esEscaner();
       }
 
       // Lo único que la puerta puede tocar de un invitado.
@@ -107,10 +115,15 @@ service cloud.firestore {
     // contiene datos personales, solo nombres de platos y bebidas.
     // Escritura solo de los novios: la puerta no cambia el menú de la boda.
     match /configuracion/{documento} {
+      // La misma lista blanca que arriba. Las funciones de /invitados no
+      // alcanzan aquí, así que el correo se repite: es el precio de no tener
+      // funciones globales en las reglas.
       allow get: if true;
-      allow list: if request.auth != null;
+      allow list: if request.auth != null
+        && request.auth.token.email in ['novios@bodallelydrix.com',
+                                        'escaner@bodallelydrix.com'];
       allow write: if request.auth != null
-        && request.auth.token.email != 'escaner@bodallelydrix.com';
+        && request.auth.token.email == 'novios@bodallelydrix.com';
     }
 
     // Todo lo demás queda cerrado.

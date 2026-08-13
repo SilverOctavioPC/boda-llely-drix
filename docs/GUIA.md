@@ -42,9 +42,8 @@ Y para cerrarlo, `Stop-Process -Id <PID> -Force`.
 
 ## Links de prueba
 
-Estos son los 11 invitados **ficticios** que crea `npm run sembrar`. Ninguno
-sale del Excel real. Suman **15 personas**, porque dos de ellos llevan
-acompañantes.
+Estos son los 11 invitados **ficticios** que crea `npm run sembrar`. Suman
+**15 personas**, porque dos de ellos llevan acompañantes.
 
 Los links van con la URL de producción, para poder abrirlos **desde el celular**
 — que es donde hay que probar el escáner, porque la cámara no funciona en local
@@ -138,15 +137,28 @@ accesos. Y al terminar la boda desactivas esa cuenta sin tocar la de ustedes.
 Si necesitas cerrar esa sesión, el escáner tiene un botón **Salir** arriba a la
 derecha (solo aparece para esa cuenta; ustedes ven "Volver al panel").
 
-### Si cambias el correo de la puerta
+### Cambiar de cuenta en un navegador donde ya iniciaste sesión
 
-Está escrito en **dos sitios que deben coincidir**:
+La sesión no caduca, así que un navegador se queda con la cuenta que usaste la
+última vez. Para cambiar, entra a **`/login`**: te dirá con qué cuenta estás y te
+da dos botones, **Continuar** y **Entrar con otra cuenta**.
 
-- [`src/lib/roles.js`](../src/lib/roles.js) → `CORREO_ESCANER`
-- [`firestore.rules`](../firestore.rules) → dos apariciones
+> Antes esto era una trampa: `/login` te redirigía en silencio y `/admin` te
+> devolvía al escáner, así que desde el celular de la puerta no había manera
+> visible de entrar como novios. Si te pasa en una versión antigua, usa el botón
+> **Salir** del escáner.
 
-Cambia los dos y **republica las reglas**. Si solo cambias uno, la cuenta nueva
-tendría permisos de novios sin que la interfaz lo refleje.
+### Si cambias alguno de los dos correos
+
+Los dos están escritos en **dos sitios que deben coincidir**:
+
+- [`src/lib/roles.js`](../src/lib/roles.js) → `CORREO_NOVIOS` y `CORREO_ESCANER`
+- [`firestore.rules`](../firestore.rules) → varias apariciones de cada uno
+
+Cambia los dos archivos y **republica las reglas**. Solo esas dos cuentas tienen
+permiso a algo: cualquier otra que llegue a existir en el proyecto no puede ni
+leer la lista de invitados. `npm test` falla si los dos archivos se
+desincronizan.
 
 ---
 
@@ -225,29 +237,27 @@ Para sumarle acompañantes a alguien que ya está en la lista (el caso más com�
 _"voy con mi esposa y dos niños"_), búscalo en la tabla, dale a **Editar** y usa
 los contadores. No hace falta darlo de alta otra vez.
 
-**Sexo y Categoría son campos distintos.** El Excel original los mezclaba en
-una sola columna (`Hombre / Mujer / Niño / Niña / Bebé`), lo que impedía contar
-menús infantiles sin perder el sexo. Ahora:
+**Sexo y Categoría son campos distintos**, para poder contar menús infantiles
+sin perder el sexo:
 
 - **Sexo**: Mujer · Hombre · Sin especificar
 - **Categoría**: Adulto · Niño · Bebé
 
-Una niña se registra como _Sexo: Mujer_ + _Categoría: Niño_. Al migrar el Excel
-la conversión es automática.
+Una niña se registra como _Sexo: Mujer_ + _Categoría: Niño_.
 
 **La Categoría solo aparece al editar, no al dar de alta.** Cuando agregas a
-alguien nuevo siempre es un adulto: los niños se suman abajo como acompañantes.
-Pero el campo sigue existiendo al editar porque de la migración vienen **10
-invitados que son niños como titulares** (MAGIE de 7 años, LIAM de 3, Kiara de
-10…), y hay que poder corregirlos. Arriba de la tabla verás la franja
-**"De los que asistirán: X adultos · Y niños · Z bebés"** — ese es el número que
-le pasas al banquete, y solo cuenta a quienes ya confirmaron.
+alguien nuevo siempre es un adulto: los niños se suman abajo como acompañantes,
+que es como encajan en el modelo. El campo sigue existiendo al editar por si un
+niño tiene que figurar como titular — por ejemplo, si el link se lo mandas a él.
 
-**Editar** — en cada fila. Sirve sobre todo para dos cosas reales de este
-proyecto:
+Arriba de la tabla verás la franja **"De los que asistirán: X adultos · Y niños
+· Z bebés"** — ese es el número que le pasas al banquete, y solo cuenta a
+quienes ya confirmaron.
 
-- Corregir los ~15 nombres de la Lista Llely que no son nombres propios
-  (`ESPOSA`, `PAREJA DE IVÁN`, `GEMELAS`…), sin tocar el Excel ni volver a migrar.
+**Editar** — en cada fila. Sirve sobre todo para dos cosas:
+
+- Corregir un nombre mal escrito. El link no cambia (eso es deliberado), así que
+  puedes arreglarlo aunque ya lo hayas mandado.
 - Marcar confirmaciones a mano cuando alguien te responde por teléfono o en
   persona y nunca abre su link.
 
@@ -264,8 +274,8 @@ incluyendo el menú de cada persona, restricciones alimenticias y el link de cad
 quien. Es lo que le pasas al banquete.
 
 **Paginación** — la tabla muestra 25 invitados por página, con _Anterior_ y
-_Siguiente_ abajo. Al cambiar cualquier filtro vuelve a la página 1. Con 210
-invitados, sin esto el scroll sería interminable.
+_Siguiente_ abajo. Al cambiar cualquier filtro vuelve a la página 1. Con la
+lista completa, sin esto el scroll sería interminable.
 
 ---
 
@@ -335,8 +345,6 @@ Solo cuenta a quienes ya confirmaron que sí, e incluye a los acompañantes.
 | `npm run sembrar`                | Crea los 11 invitados de prueba (borra los anteriores)     |
 | `npm run limpiar-prueba`         | Lista los invitados de prueba                              |
 | `npm run limpiar-prueba -- --si` | Los borra de verdad                                        |
-| `npm run migrar -- --dry-run`    | Lee el Excel y reporta, **sin escribir nada**              |
-| `npm run migrar`                 | Sube los 210 invitados reales a Firestore                  |
 | `npm run links`                  | Genera `salida/links-rsvp.csv` con todos los links         |
 | `npm run lint`                   | Revisa el código; no debe imprimir nada                    |
 | `npm run format`                 | Aplica el formato con Prettier                             |
@@ -353,8 +361,8 @@ así que sobrevive a `limpiar-prueba` y a `sembrar`.
 Ya pasó una vez: quedó un invitado llamado `x` de una prueba del botón "Agregar
 invitado", contando como una persona confirmada y una entrada registrada.
 
-**Antes de migrar los 210, comprueba que la colección quedó vacía.** Si diste de
-alta a alguien a mano mientras probabas, bórralo tú desde el panel:
+**Antes de empezar con la lista real, comprueba que la colección quedó vacía.**
+Si diste de alta a alguien a mano mientras probabas, bórralo tú desde el panel:
 
 ```powershell
 npm run limpiar-prueba -- --si   # borra los 11 sembrados
@@ -461,7 +469,8 @@ Cierra la terminal y abre una nueva. El `Path` solo se lee al abrirla.
 
 **El panel no muestra invitados**
 Corre `npm run verificar`. Si dice que la colección tiene 0 documentos, te falta
-`npm run sembrar` (prueba) o `npm run migrar` (real).
+sembrar los de prueba (`npm run sembrar`) o dar de alta a los reales desde el
+panel.
 
 **El invitado no puede guardar su menú**
 Las reglas publicadas son anteriores al menú. Republica

@@ -1,14 +1,15 @@
 /**
  * Normaliza texto para buscar: sin acentos, sin signos y en minúsculas.
  *
- * Hace falta porque los nombres del Excel vienen con acentos irregulares
- * ("Lucía" / "Lucia", "TOÑITA") y quien busca en la puerta escribe con prisa.
+ * Hace falta porque los nombres se escriben con acentuación irregular
+ * ("Lucía" / "Lucia", "TOÑITA") y quien busca en la puerta teclea con prisa,
+ * a oscuras y con una mano.
  *
  * NFD separa cada letra acentuada en letra + marca combinante, y el filtro
  * alfanumérico descarta las marcas: "Ordóñez" -> "ordonez".
  *
- * Los espacios repetidos se colapsan a uno: el Excel trae nombres como
- * "JAVIER  C." con doble espacio, y en la puerta nadie va a teclear dos.
+ * Los espacios repetidos se colapsan a uno: al dar de alta es fácil que se
+ * cuele un doble espacio ("JAVIER  C.") y en la puerta nadie va a teclear dos.
  */
 export function normalizar(texto) {
   return (texto || '')

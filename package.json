@@ -14,7 +14,6 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verificar": "node scripts/verificar.js",
-    "migrar": "node scripts/migrar.js",
     "links": "node scripts/generarLinks.js",
     "sembrar": "node scripts/sembrarPrueba.js",
     "limpiar-prueba": "node scripts/limpiarPrueba.js"
@@ -36,7 +35,6 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.4",
-    "exceljs": "^4.4.0",
     "firebase-admin": "^12.5.0",
     "globals": "^17.11.0",
     "postcss": "^8.4.47",
