@@ -46,26 +46,37 @@ Estos son los 11 invitados **ficticios** que crea `npm run sembrar`. Ninguno
 sale del Excel real. Suman **15 personas**, porque dos de ellos llevan
 acompañantes.
 
+Los links van con la URL de producción, para poder abrirlos **desde el celular**
+— que es donde hay que probar el escáner, porque la cámara no funciona en local
+desde el teléfono. En la laptop sirve el mismo id cambiando el dominio por
+`http://localhost:5173`.
+
 **Empieza por este** — Patricia Alcázar va con 3 acompañantes, así que verás el
 caso completo: un solo QR que vale por 4 personas.
 
 ```
-http://localhost:5173/rsvp/R26BpMwR9l3bJltsC9Xm
+https://boda-llely-drix.vercel.app/rsvp/x7nHSZB4T453p3fEjrIC
 ```
 
-| Qué prueba                               | Invitado         | Link                                              |
-| ---------------------------------------- | ---------------- | ------------------------------------------------- |
-| **Grupo de 4 con nombres**               | Patricia Alcázar | `http://localhost:5173/rsvp/xOBl8FW9fKKauRl8g4P6` |
-| **Acompañante sin nombre** ("2 lugares") | Gerardo Pineda   | `http://localhost:5173/rsvp/rPaHLLwaRjCL2L2Mz41N` |
-| Formulario de confirmación               | Valentina Ruiz   | `http://localhost:5173/rsvp/SquLqPlAVrbGcSOrDCH5` |
-| Flujo de "No podré"                      | Rodrigo Salas    | `http://localhost:5173/rsvp/elwGsEqH2owrmvZw4yqK` |
-| Ya confirmó: QR + restricciones          | Camila Ferrer    | `http://localhost:5173/rsvp/GdmwkbTs6nMC29VpfkUJ` |
-| QR válido → **verde** al escanear        | Tomás Iriarte    | `http://localhost:5173/rsvp/L2j2Tt9GlJaa8xCKo89n` |
-| Niña: Mujer + categoría Niño             | Renata Ocampo    | `http://localhost:5173/rsvp/mro71dYyZ1tnePDOLe1u` |
-| Bebé: cuenta aparte, sin menú            | Bruno Sepúlveda  | `http://localhost:5173/rsvp/Qe11ukI7wyc7Yw7ONN12` |
-| Ya entró → **ámbar** al escanear         | Ignacio Bustos   | `http://localhost:5173/rsvp/Ry8P1lLTyKDHFuIwNbHs` |
-| Dijo NO → **rojo** al escanear           | Lucía Ordóñez    | `http://localhost:5173/rsvp/xtvSftBl63U3u6FXpxOC` |
-| Pendiente → **rojo** al escanear         | Esteban Quiroga  | `http://localhost:5173/rsvp/wWrBiZJE1RSGkyPJmEfD` |
+| Qué prueba                               | Invitado         | Link (tras `https://boda-llely-drix.vercel.app`) |
+| ---------------------------------------- | ---------------- | ------------------------------------------------ |
+| **Grupo de 4 con nombres**               | Patricia Alcázar | `/rsvp/x7nHSZB4T453p3fEjrIC`                     |
+| **Acompañante sin nombre** ("2 lugares") | Gerardo Pineda   | `/rsvp/FTlfi2ZDceu8NLBuC1OL`                     |
+| Formulario de confirmación               | Valentina Ruiz   | `/rsvp/dFI8hTAMBC3VWqu6EZZ5`                     |
+| Flujo de "No podré"                      | Rodrigo Salas    | `/rsvp/sU2oWLnTwSzXWeKYH0P4`                     |
+| Ya confirmó: QR + restricciones          | Camila Ferrer    | `/rsvp/SbRy1ql1W7AZahIDubas`                     |
+| QR válido → **verde** al escanear        | Tomás Iriarte    | `/rsvp/Hb6uPrhSax54N3G7WhTk`                     |
+| Niña: Mujer + categoría Niño             | Renata Ocampo    | `/rsvp/893bEMrpgUkStQfTCajM`                     |
+| Bebé: cuenta aparte, sin menú            | Bruno Sepúlveda  | `/rsvp/ESeeRSoC2qtEMC5nmucN`                     |
+| Ya entró → **ámbar** al escanear         | Ignacio Bustos   | `/rsvp/Et4hn87aPlDjg0CUSjoy`                     |
+| Dijo NO → **rojo** al escanear           | Lucía Ordóñez    | `/rsvp/dxhIXBD65wjW5nLtgXZK`                     |
+| Pendiente → **rojo** al escanear         | Esteban Quiroga  | `/rsvp/dDcz1ZQJmBYgkdlVjKE4`                     |
+
+> **El rojo no se prueba por QR.** Quien dice que no, no recibe pase: la página
+> de Lucía muestra "Lamentamos que no puedas acompañarnos", sin código. Para ver
+> el rojo usa **Buscar por nombre** en el escáner y toca su nombre. El otro rojo,
+> "Código no válido", sale escaneando cualquier QR ajeno — y ese sí es el que
+> vas a ver de verdad esa noche.
 
 Patricia Alcázar lleva a **Héctor Alcázar**, **Sofía (7 años)** y **Mateo
 (4 años)** — al escanear su QR deben aparecer los tres por nombre. Gerardo
@@ -167,6 +178,21 @@ Requiere sesión. Abre la cámara y lee los QR:
 | 🔴 Rojo  | No confirmó asistencia, o el código no es válido.  |
 
 Arriba lleva un contador en vivo de cuántos han entrado del total esperado.
+
+**El resultado ocupa la pantalla entera y vibra**, para que se vea de reojo y a
+distancia sin tener que leerlo. Mientras está en pantalla la cámara deja de
+leer: hay que pulsar **"Escanear siguiente"**. Es a propósito — si no, el
+celular del siguiente invitado entrando en cuadro reemplazaría un resultado que
+nadie confirmó, y estarías dando por bueno a alguien sin revisarlo.
+
+> ⚠️ **Una entrada registrada no se puede deshacer desde el panel.** Si escaneas
+> a alguien por error, se queda como que ya entró. No es grave —al escanearlo de
+> nuevo sale en ámbar y verificas por nombre— pero tenlo presente: el contador
+> quedará descuadrado en uno.
+
+Si alguien llega sin su QR —sin batería, sin encontrar el WhatsApp, o porque
+nunca lo abrió— usa **"Buscar por nombre"**. Encuentra con acentos y sin ellos,
+y con el nombre a medias.
 
 ---
 
@@ -306,12 +332,36 @@ Solo cuenta a quienes ya confirmaron que sí, e incluye a los acompañantes.
 | `npm run build`                  | Compila para producción (carpeta `dist/`)                  |
 | `npm run preview`                | Sirve lo compilado, para revisar antes de desplegar        |
 | `npm run verificar`              | Diagnostica la configuración de Firebase y avisa qué falta |
-| `npm run sembrar`                | Crea los 8 invitados de prueba (borra los anteriores)      |
+| `npm run sembrar`                | Crea los 11 invitados de prueba (borra los anteriores)     |
 | `npm run limpiar-prueba`         | Lista los invitados de prueba                              |
 | `npm run limpiar-prueba -- --si` | Los borra de verdad                                        |
 | `npm run migrar -- --dry-run`    | Lee el Excel y reporta, **sin escribir nada**              |
 | `npm run migrar`                 | Sube los 210 invitados reales a Firestore                  |
 | `npm run links`                  | Genera `salida/links-rsvp.csv` con todos los links         |
+| `npm run lint`                   | Revisa el código; no debe imprimir nada                    |
+| `npm run format`                 | Aplica el formato con Prettier                             |
+| `npm test`                       | Los 79 tests de la lógica del menú y los acompañantes      |
+
+Antes de subir cambios: `npm run lint && npm test && npm run build`.
+
+### ⚠️ Los invitados creados a mano NO son "de prueba"
+
+`limpiar-prueba` borra únicamente los que llevan la marca `esPrueba`, que solo
+pone `npm run sembrar`. **Un invitado que agregues desde el panel no la lleva**,
+así que sobrevive a `limpiar-prueba` y a `sembrar`.
+
+Ya pasó una vez: quedó un invitado llamado `x` de una prueba del botón "Agregar
+invitado", contando como una persona confirmada y una entrada registrada.
+
+**Antes de migrar los 210, comprueba que la colección quedó vacía.** Si diste de
+alta a alguien a mano mientras probabas, bórralo tú desde el panel:
+
+```powershell
+npm run limpiar-prueba -- --si   # borra los 11 sembrados
+npm run verificar                # debe decir 0 documentos
+```
+
+Si `verificar` no dice cero, es que queda alguno creado a mano.
 
 ---
 
