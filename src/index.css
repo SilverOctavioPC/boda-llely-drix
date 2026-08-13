@@ -9,7 +9,13 @@
 
   body {
     @apply bg-crema text-carbon antialiased;
-    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    font-family:
+      ui-sans-serif,
+      system-ui,
+      -apple-system,
+      'Segoe UI',
+      Roboto,
+      sans-serif;
   }
 
   /* Evita el zoom automático de iOS al enfocar un input (fuentes < 16px). */
@@ -21,8 +27,13 @@
 }
 
 @layer components {
+  /*
+    `min-h-11` son 44px: el mínimo recomendado para tocar con el dedo sin
+    fallar. Va aquí y no en cada botón porque varios sitios rebajan el alto con
+    `py-2 text-sm` para que quepan; el mínimo aguanta por debajo de ese ajuste.
+  */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 py-3
            font-medium transition active:scale-[.98]
            disabled:cursor-not-allowed disabled:opacity-50;
   }

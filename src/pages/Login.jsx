@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext.jsx'
+import { useAuth } from '../context/contextoAuth.js'
 import Cargando from '../components/Cargando.jsx'
 import { EVENTO } from '../lib/evento.js'
 import { inicioDe } from '../lib/roles.js'

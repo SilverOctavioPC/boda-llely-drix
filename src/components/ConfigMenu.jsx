@@ -97,8 +97,8 @@ export default function ConfigMenu({ config, onGuardar, onCancelar, guardando })
   return (
     <form onSubmit={enviar}>
       <p className="mb-4 text-sm text-carbon/60">
-        Lo que configures aquí es lo que verán los invitados al confirmar. Si
-        dejas una lista vacía, esa pregunta no se les hace.
+        Lo que configures aquí es lo que verán los invitados al confirmar. Si dejas una lista vacía,
+        esa pregunta no se les hace.
       </p>
 
       <div className="space-y-4">
@@ -126,9 +126,8 @@ export default function ConfigMenu({ config, onGuardar, onCancelar, guardando })
       {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
 
       <p className="mt-4 rounded-xl bg-arena/50 px-4 py-3 text-xs text-carbon/60">
-        Si borras una opción que alguien ya había elegido, su elección queda
-        marcada como <em>“opción eliminada”</em> en el panel. Tendrás que
-        preguntarle de nuevo.
+        Si borras una opción que alguien ya había elegido, su elección queda marcada como{' '}
+        <em>“opción eliminada”</em> en el panel. Tendrás que preguntarle de nuevo.
       </p>
 
       <div className="mt-6 flex gap-3">

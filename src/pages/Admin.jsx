@@ -12,7 +12,7 @@ import {
 } from 'firebase/firestore'
 import { db, COLECCION } from '../lib/firebase.js'
 import { normalizar } from '../lib/texto.js'
-import { useAuth } from '../context/AuthContext.jsx'
+import { useAuth } from '../context/contextoAuth.js'
 import Cargando from '../components/Cargando.jsx'
 import Modal from '../components/Modal.jsx'
 import FormularioInvitado from '../components/FormularioInvitado.jsx'
@@ -226,15 +226,31 @@ export default function Admin() {
   const POR_PAGINA = 25
   const totalPaginas = Math.max(1, Math.ceil(filtrados.length / POR_PAGINA))
 
+  // Al cambiar cualquier filtro se vuelve a la primera página: si no, quien
+  // busca desde la página 3 cree que su búsqueda no encontró nada.
+  //
+  // Se ajusta durante el render y no con un useEffect. Un setState dentro de un
+  // efecto pinta la página vieja y la corrige después, en dos renders; así React
+  // descarta el render a medias y solo pinta el bueno. Es el patrón que
+  // documenta React para "ajustar estado cuando cambian los datos de entrada".
+  const filtros = JSON.stringify([
+    busqueda,
+    filtroGrupo,
+    filtroConfirmacion,
+    filtroCategoria,
+    filtroMenu,
+  ])
+  const [filtrosPrevios, setFiltrosPrevios] = useState(filtros)
+  if (filtros !== filtrosPrevios) {
+    setFiltrosPrevios(filtros)
+    setPagina(1)
+  }
+
   // Si al filtrar quedan menos páginas de las que había, volvemos a la primera
   // en vez de dejar al usuario mirando una página vacía.
   const paginaSegura = Math.min(pagina, totalPaginas)
   const desde = (paginaSegura - 1) * POR_PAGINA
   const paginados = filtrados.slice(desde, desde + POR_PAGINA)
-
-  useEffect(() => {
-    setPagina(1)
-  }, [busqueda, filtroGrupo, filtroConfirmacion, filtroCategoria, filtroMenu])
 
   // ---------- Acciones ----------
 
@@ -407,8 +423,7 @@ export default function Admin() {
 
   // Al borrar a alguien que ya confirmó o que ya entró, exigimos escribir el
   // nombre. Es el caso en el que un clic por error duele de verdad.
-  const borradoDelicado =
-    borrando && (borrando.confirmacion === 'Si' || borrando.entradaRegistrada)
+  const borradoDelicado = borrando && (borrando.confirmacion === 'Si' || borrando.entradaRegistrada)
   const puedeBorrar = !borradoDelicado || textoBorrado.trim() === borrando?.nombre
 
   return (
@@ -434,9 +449,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {error && (
-        <p className="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>
-      )}
+      {error && <p className="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <Metrica etiqueta="Personas" valor={resumen.personas} />
@@ -475,8 +488,7 @@ export default function Admin() {
                 onClick={() => setFiltroMenu(filtroMenu === 'faltan' ? 'Todos' : 'faltan')}
                 className="text-xs text-oro underline"
               >
-                Hay elecciones pendientes —{' '}
-                {filtroMenu === 'faltan' ? 'ver todos' : 'ver quiénes'}
+                Hay elecciones pendientes — {filtroMenu === 'faltan' ? 'ver todos' : 'ver quiénes'}
               </button>
             )}
           </div>
@@ -500,9 +512,7 @@ export default function Admin() {
                   </ul>
                 )}
                 {menu.faltantes[curso.clave] > 0 && (
-                  <p className="mt-1 text-xs text-oro">
-                    {menu.faltantes[curso.clave]} sin elegir
-                  </p>
+                  <p className="mt-1 text-xs text-oro">{menu.faltantes[curso.clave]} sin elegir</p>
                 )}
               </div>
             ))}
@@ -577,9 +587,7 @@ export default function Admin() {
               <th className="px-4 py-3 font-medium">Categoría</th>
               <th className="px-4 py-3 font-medium">Mesa</th>
               <th className="px-4 py-3 font-medium">Confirmación</th>
-              {hayMenuConfigurado(config) && (
-                <th className="px-4 py-3 font-medium">Menú</th>
-              )}
+              {hayMenuConfigurado(config) && <th className="px-4 py-3 font-medium">Menú</th>}
               <th className="px-4 py-3 font-medium">Restricciones</th>
               {/* "Acceso" y no "Entrada", para no confundirlo con el
                   primer tiempo del menú. */}
@@ -640,9 +648,7 @@ export default function Admin() {
                     )}
                   </td>
                 )}
-                <td className="max-w-[200px] px-4 py-3 text-carbon/60">
-                  {i.restricciones || '—'}
-                </td>
+                <td className="max-w-[200px] px-4 py-3 text-carbon/60">{i.restricciones || '—'}</td>
                 <td className="px-4 py-3">
                   {i.entradaRegistrada ? (
                     <span className="text-salviaOscuro">✓</span>
@@ -650,38 +656,46 @@ export default function Admin() {
                     <span className="text-carbon/30">—</span>
                   )}
                 </td>
-                <td className="whitespace-nowrap px-4 py-3 text-right">
-                  <button
-                    onClick={() => copiarLink(i.id)}
-                    className="rounded-lg px-2 py-1 text-xs text-salviaOscuro hover:bg-arena"
-                    title="Copiar link de RSVP"
-                  >
-                    {copiadoId === i.id ? '✓ Copiado' : 'Link'}
-                  </button>
-                  {hayMenuConfigurado(config) && (
+                {/*
+                  Los botones van separados y con alto suficiente para el dedo:
+                  antes medían 24px y estaban pegados, y el último es Borrar.
+                  En el celular, fallar el toque entre "Editar" y "Borrar" era
+                  cuestión de tiempo. `ml-3` aísla además el destructivo.
+                */}
+                <td className="whitespace-nowrap px-4 py-2 text-right">
+                  <div className="flex items-center justify-end gap-1">
                     <button
-                      onClick={() => abrirMenuDe(i)}
-                      className="rounded-lg px-2 py-1 text-xs text-carbon/70 hover:bg-arena"
-                      title="Cambiar lo que va a comer"
+                      onClick={() => copiarLink(i.id)}
+                      className="min-h-9 rounded-lg px-3 py-2 text-xs text-salviaOscuro hover:bg-arena"
+                      title="Copiar link de RSVP"
                     >
-                      Menú
+                      {copiadoId === i.id ? '✓ Copiado' : 'Link'}
                     </button>
-                  )}
-                  <button
-                    onClick={() => setEditando(i)}
-                    className="rounded-lg px-2 py-1 text-xs text-carbon/70 hover:bg-arena"
-                  >
-                    Editar
-                  </button>
-                  <button
-                    onClick={() => {
-                      setBorrando(i)
-                      setTextoBorrado('')
-                    }}
-                    className="rounded-lg px-2 py-1 text-xs text-red-600 hover:bg-red-50"
-                  >
-                    Borrar
-                  </button>
+                    {hayMenuConfigurado(config) && (
+                      <button
+                        onClick={() => abrirMenuDe(i)}
+                        className="min-h-9 rounded-lg px-3 py-2 text-xs text-carbon/70 hover:bg-arena"
+                        title="Cambiar lo que va a comer"
+                      >
+                        Menú
+                      </button>
+                    )}
+                    <button
+                      onClick={() => setEditando(i)}
+                      className="min-h-9 rounded-lg px-3 py-2 text-xs text-carbon/70 hover:bg-arena"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => {
+                        setBorrando(i)
+                        setTextoBorrado('')
+                      }}
+                      className="ml-3 min-h-9 rounded-lg px-3 py-2 text-xs text-red-600 hover:bg-red-50"
+                    >
+                      Borrar
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -767,8 +781,8 @@ export default function Admin() {
         {menuDe && (
           <>
             <p className="mb-4 text-sm text-carbon/60">
-              Cambia lo que va a comer cada quien. Útil cuando te avisan por
-              teléfono. Aquí no hace falta completarlo todo.
+              Cambia lo que va a comer cada quien. Útil cuando te avisan por teléfono. Aquí no hace
+              falta completarlo todo.
             </p>
             <SelectorMenu
               invitado={menuDe}
@@ -826,12 +840,10 @@ export default function Admin() {
         titulo="Invitado agregado"
       >
         <p className="text-carbon/70">
-          <span className="font-medium text-carbon">{recienCreado?.nombre}</span> ya
-          está en la lista. Este es su link para mandarle por WhatsApp:
+          <span className="font-medium text-carbon">{recienCreado?.nombre}</span> ya está en la
+          lista. Este es su link para mandarle por WhatsApp:
         </p>
-        <div className="mt-4">
-          {recienCreado && <CampoLink valor={linkDe(recienCreado.id)} />}
-        </div>
+        <div className="mt-4">{recienCreado && <CampoLink valor={linkDe(recienCreado.id)} />}</div>
         <button onClick={() => setRecienCreado(null)} className="btn-primario mt-6 w-full">
           Listo
         </button>
@@ -843,9 +855,8 @@ export default function Admin() {
         titulo="Borrar invitado"
       >
         <p className="text-carbon/70">
-          Vas a borrar a{' '}
-          <span className="font-medium text-carbon">{borrando?.nombre}</span>. Su link
-          de RSVP dejará de funcionar y no se puede deshacer.
+          Vas a borrar a <span className="font-medium text-carbon">{borrando?.nombre}</span>. Su
+          link de RSVP dejará de funcionar y no se puede deshacer.
         </p>
 
         {borradoDelicado && (
@@ -855,8 +866,8 @@ export default function Admin() {
               {borrando?.entradaRegistrada
                 ? 'Esta persona ya registró su entrada al evento.'
                 : 'Esta persona ya confirmó que sí asistirá.'}{' '}
-              Si solo no va a venir, es mejor <strong>editarla</strong> y ponerle
-              “No asistirá”: así conservas el registro.
+              Si solo no va a venir, es mejor <strong>editarla</strong> y ponerle “No asistirá”: así
+              conservas el registro.
             </p>
             <label htmlFor="conf-borrado" className="mt-3 block font-medium">
               Escribe “{borrando?.nombre}” para confirmar:

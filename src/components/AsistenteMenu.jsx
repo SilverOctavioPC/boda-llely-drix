@@ -11,11 +11,7 @@ function Progreso({ personas, actual, elecciones, config }) {
           <span
             key={p.indice}
             className={`h-2 rounded-full transition-all ${
-              i === actual
-                ? 'w-6 bg-carbon'
-                : completa
-                  ? 'w-2 bg-salvia'
-                  : 'w-2 bg-arena'
+              i === actual ? 'w-6 bg-carbon' : completa ? 'w-2 bg-salvia' : 'w-2 bg-arena'
             }`}
           />
         )
@@ -49,8 +45,7 @@ export default function AsistenteMenu({
 
   // "Lo mismo para todos" solo tiene sentido desde el primero, cuando ya
   // eligió algo y hay más gente a la que copiárselo.
-  const puedeCopiar =
-    paso === 0 && personas.length > 1 && CURSOS.some((c) => eleccion[c.clave])
+  const puedeCopiar = paso === 0 && personas.length > 1 && CURSOS.some((c) => eleccion[c.clave])
 
   return (
     <div>
@@ -112,9 +107,9 @@ export default function AsistenteMenu({
 
       {!completa && (
         <p className="mt-2 text-center text-xs text-carbon/50">
-          Elige {CURSOS.filter(
-            (c) =>
-              opcionesPara(c.clave, persona.tipo, config).length > 0 && !eleccion[c.clave]
+          Elige{' '}
+          {CURSOS.filter(
+            (c) => opcionesPara(c.clave, persona.tipo, config).length > 0 && !eleccion[c.clave]
           )
             .map((c) => c.etiqueta.toLowerCase())
             .join(' y ')}{' '}

@@ -201,8 +201,8 @@ export default function Rsvp() {
         <Encabezado />
         <div className="tarjeta text-center">
           <p className="text-carbon/70">
-            No encontramos esta invitación. Verifica que hayas abierto el link
-            completo tal como te lo enviamos, o escríbenos directamente.
+            No encontramos esta invitación. Verifica que hayas abierto el link completo tal como te
+            lo enviamos, o escríbenos directamente.
           </p>
         </div>
       </main>
@@ -271,9 +271,7 @@ export default function Rsvp() {
         <div className="tarjeta">
           {invitado.confirmacion === 'Si' ? (
             <>
-              <h2 className="font-titulo text-2xl">
-                ¡Gracias por confirmar, {invitado.nombre}!
-              </h2>
+              <h2 className="font-titulo text-2xl">¡Gracias por confirmar, {invitado.nombre}!</h2>
               <p className="mt-2 text-carbon/70">
                 {vaAcompanado
                   ? `Los esperamos. Este pase vale por ${totalDelGrupo} personas:`
@@ -284,8 +282,8 @@ export default function Rsvp() {
               </div>
               {vaAcompanado && (
                 <p className="mt-4 text-center text-sm text-carbon/60">
-                  Incluye a {textoAcompanantes}. Con un solo código entran todos,
-                  no hace falta que cada quien traiga el suyo.
+                  Incluye a {textoAcompanantes}. Con un solo código entran todos, no hace falta que
+                  cada quien traiga el suyo.
                 </p>
               )}
               {hayMenuConfigurado(config) && (

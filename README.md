@@ -6,10 +6,10 @@ Sistema web para confirmar asistencia y controlar la entrada el día del evento.
 - **`/admin`** — panel privado de los novios.
 - **`/admin/scanner`** — escáner de QR para la puerta.
 
-> 📋 **[PENDIENTES.md](PENDIENTES.md)** — qué falta por hacer y en qué orden.
+> 📋 **[PENDIENTES.md](docs/PENDIENTES.md)** — qué falta por hacer y en qué orden.
 > **Empieza por aquí si retomas el proyecto.**
 >
-> 📖 **[GUIA.md](GUIA.md)** — cómo arrancar el servidor, links de prueba,
+> 📖 **[GUIA.md](docs/GUIA.md)** — cómo arrancar el servidor, links de prueba,
 > comandos y problemas comunes. Este README es solo la instalación inicial.
 
 ---
@@ -29,11 +29,11 @@ reales.
 `"Karen Flores +1"` que se usó como ejemplo aparece **solo en 3 filas de todo el
 archivo**. Los demás acompañantes están así:
 
-| Cómo aparece | Ejemplo | Dónde |
-| --- | --- | --- |
-| `Nombre +1` | `Karen Flores +1` | Drix, 3 filas |
-| El mismo nombre repetido en filas seguidas | `Joaquín Pérez` ×3 (Hombre / Mujer / Niño 8 años) | Drix, ~20 filas |
-| Un parentesco en vez de un nombre | `ESPOSA`, `PAREJA DE IVÁN`, `Hijo Marisol`, `ITZA ACOMPA` | Llely, ~15 filas |
+| Cómo aparece                               | Ejemplo                                                   | Dónde            |
+| ------------------------------------------ | --------------------------------------------------------- | ---------------- |
+| `Nombre +1`                                | `Karen Flores +1`                                         | Drix, 3 filas    |
+| El mismo nombre repetido en filas seguidas | `Joaquín Pérez` ×3 (Hombre / Mujer / Niño 8 años)         | Drix, ~20 filas  |
+| Un parentesco en vez de un nombre          | `ESPOSA`, `PAREJA DE IVÁN`, `Hijo Marisol`, `ITZA ACOMPA` | Llely, ~15 filas |
 
 Esto crea una trampa: agrupar o "deduplicar por nombre único" **borraría
 acompañantes**. La familia de `Joaquín Pérez` pasaría de 3 personas a 1.
@@ -46,7 +46,7 @@ deduplica, no se cambian mayúsculas ni acentos. 210 filas → 210 invitados.
 
 - **~15 invitados de Lista Llely no tienen nombre propio** (`ESPOSA`, `ESPOSO`,
   `GEMELAS`, `PELANCHITO`, `AMIGA ALBERTO`…). Su link dirá literalmente
-  *"Hola, ESPOSA"*. **Recomendación:** corrijan esos nombres en el Excel *antes*
+  _"Hola, ESPOSA"_. **Recomendación:** corrijan esos nombres en el Excel _antes_
   de correr la migración; después de generar los links, cambiarlos implica
   regenerar.
 - **Hay nombres repetidos** entre personas distintas (`VICKY` ×2, `ROBERTO` ×2,
@@ -154,20 +154,23 @@ Para trabajar las tres pantallas sin cargar todavía a los 210 invitados:
 npm run sembrar
 ```
 
-Crea 8 invitados **ficticios** (nombres inventados, ninguno sale del Excel) que
+Crea 11 invitados **ficticios** (nombres inventados, ninguno sale del Excel) que
 cubren todos los estados de la interfaz, e imprime el link de RSVP de cada uno
-listo para abrir:
+listo para abrir. Suman **15 personas**, porque dos llevan acompañantes:
 
-| Invitado de prueba | Para probar |
-| --- | --- |
-| Valentina Ruiz | Pendiente — formulario de confirmación |
-| Rodrigo Salas | Pendiente — flujo de "No podré" |
-| Camila Ferrer | Ya dijo SÍ — muestra QR y restricciones |
-| Tomás Iriarte | Ya dijo SÍ — escanea su QR: **verde** |
-| Renata Ocampo | Niña con edad — cómo se ve en la tabla |
-| Ignacio Bustos | Ya entró — al escanear: **ámbar "Ya registrado"** |
-| Lucía Ordóñez | Dijo NO — al escanear: **rojo "No confirmó"** |
-| Esteban Quiroga | Pendiente — al escanear: **rojo "No confirmó"** |
+| Invitado de prueba | Para probar                                       |
+| ------------------ | ------------------------------------------------- |
+| Valentina Ruiz     | Pendiente — formulario de confirmación            |
+| Rodrigo Salas      | Pendiente — flujo de "No podré"                   |
+| Camila Ferrer      | Ya dijo SÍ — muestra QR y restricciones           |
+| Tomás Iriarte      | Ya dijo SÍ — escanea su QR: **verde**             |
+| Renata Ocampo      | Niña con edad — cómo se ve en la tabla            |
+| Bruno Sepúlveda    | Bebé — cuenta aparte y sin menú                   |
+| Patricia Alcázar   | Grupo de 4 con nombres — un solo QR para todos    |
+| Gerardo Pineda     | Acompañante sin nombre — el caso "2 lugares"      |
+| Ignacio Bustos     | Ya entró — al escanear: **ámbar "Ya registrado"** |
+| Lucía Ordóñez      | Dijo NO — al escanear: **rojo "No confirmó"**     |
+| Esteban Quiroga    | Pendiente — al escanear: **rojo "No confirmó"**   |
 
 Todos llevan `esPrueba: true`, así que se borran limpiamente sin tocar nada más:
 
@@ -216,7 +219,7 @@ npm run dev     # http://localhost:5173
 npm run build
 ```
 
-En **Vercel**: importa el repo, framework *Vite*, y carga las mismas variables
+En **Vercel**: importa el repo, framework _Vite_, y carga las mismas variables
 `VITE_*` en Settings → Environment Variables. Después del primer despliegue,
 pon la URL real en `BASE_URL` del `.env` y vuelve a correr `npm run links`.
 
@@ -295,19 +298,20 @@ Colección `configuracion`, documento `menu`:
   grupo y confirmación antes de aceptarse.
 - **Dos perfiles con permisos distintos**, por mínimo privilegio:
 
-  | | Novios | Escáner (puerta) |
-  | --- | --- | --- |
-  | Ver la lista | Sí | Sí |
-  | Marcar accesos | Sí | Sí |
-  | Editar invitados | Sí | **No** |
-  | Crear y borrar | Sí | **No** |
-  | Cambiar el menú | Sí | **No** |
+  |                  | Novios | Escáner (puerta) |
+  | ---------------- | ------ | ---------------- |
+  | Ver la lista     | Sí     | Sí               |
+  | Marcar accesos   | Sí     | Sí               |
+  | Editar invitados | Sí     | **No**           |
+  | Crear y borrar   | Sí     | **No**           |
+  | Cambiar el menú  | Sí     | **No**           |
 
   El rol se decide por el correo de la cuenta (`escaner@bodallelydrix.com`),
   definido a la vez en `firestore.rules` y en
   [`src/lib/roles.js`](src/lib/roles.js). Si cambias uno, cambia el otro.
   La app oculta lo que esa cuenta no puede hacer, pero **quien lo impide de
   verdad son las reglas**, no el navegador.
+
 - **Un invitado no puede regalarse lugares de más.** Sus elecciones de menú van
   en `menuAcompanantes`, una lista separada de `acompanantes`. Si estuvieran
   dentro, para dejarle elegir habría que darle permiso de escritura sobre
@@ -389,9 +393,9 @@ generan a partir de ahí.
   el postre.
 - **Despliegue en Vercel** — `/`, `/admin`, `/login`, `/admin/scanner` y
   `/rsvp/:id` responden 200 y sirven la app (hizo falta `vercel.json` con el
-  *rewrite* a `index.html`; sin él, recargar en cualquier ruta daba 404).
+  _rewrite_ a `index.html`; sin él, recargar en cualquier ruta daba 404).
 
-El *dry-run* también detectó **19 nombres repetidos** entre personas distintas
+El _dry-run_ también detectó **19 nombres repetidos** entre personas distintas
 (`joaquín pérez` ×3, `esposa` ×2, `karen flores +1` ×2, `vicky` ×2…). Cada uno
 recibe su propio link; usa `Lista` + `Fila Excel` del CSV para saber cuál es cuál.
 
@@ -400,11 +404,11 @@ recibe su propio link; usa `Lista` + `Fila Excel` del CSV para saber cuál es cu
 La página de RSVP se abre desde WhatsApp con datos móviles, así que el código
 está partido en tres:
 
-| Chunk | Tamaño | Quién lo descarga |
-| --- | --- | --- |
-| `index` | 144 kB gzip | Todos (página de RSVP) |
-| `ZonaPrivada` | 28 kB gzip | Solo al entrar a `/admin` |
-| `Scanner` | 101 kB gzip | Solo al abrir el escáner |
+| Chunk         | Tamaño      | Quién lo descarga         |
+| ------------- | ----------- | ------------------------- |
+| `index`       | 144 kB gzip | Todos (página de RSVP)    |
+| `ZonaPrivada` | 28 kB gzip  | Solo al entrar a `/admin` |
+| `Scanner`     | 101 kB gzip | Solo al abrir el escáner  |
 
 Antes de separarlo, la página pública pesaba **272 kB gzip**: los invitados
 descargaban la librería del escáner y el módulo de autenticación sin usarlos.
@@ -413,7 +417,7 @@ descargaban la librería del escáner y el módulo de autenticación sin usarlos
 
 - **Que un invitado pueda guardar su menú.** Requiere publicar la versión actual
   de `firestore.rules` (la que añade `menu` y `menuAcompanantes` a la lista
-  blanca). Hasta entonces, confirmar con menú falla con *permission denied*.
+  blanca). Hasta entonces, confirmar con menú falla con _permission denied_.
 - **La cámara del escáner en un celular real.** Solo se puede probar ya
   desplegado: el navegador exige HTTPS y en `192.168.x.x` nunca funciona.
 - **La migración real de los 210 invitados.** Se probó a fondo la lectura del

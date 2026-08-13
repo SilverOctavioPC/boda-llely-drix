@@ -3,7 +3,7 @@
 Estado del proyecto y lo que falta. Actualizado al **11 de agosto de 2026**.
 
 Para el uso diario mira [GUIA.md](GUIA.md); para la instalación,
-[README.md](README.md).
+[README.md](../README.md).
 
 ---
 
@@ -11,19 +11,19 @@ Para el uso diario mira [GUIA.md](GUIA.md); para la instalación,
 
 **Todo lo construido funciona y está desplegado.**
 
-| | Estado |
-| --- | --- |
-| Código en GitHub | `SilverOctavioPC/boda-llely-drix`, rama `main`, al día |
-| Sitio en producción | https://boda-llely-drix.vercel.app |
-| Firebase | Proyecto `boda-llely-drix`, plan Spark (gratis), región `nam5` |
-| Reglas de Firestore | **Publicadas y verificadas** end-to-end |
-| Invitados en la base | **11 de prueba** (la base se limpió y se resembró) |
-| Menú configurado | Los 4 tiempos, con opciones de ejemplo para probar |
-| Perfiles de acceso | Novios (todo) y Escáner (solo marcar accesos) |
+|                      | Estado                                                         |
+| -------------------- | -------------------------------------------------------------- |
+| Código en GitHub     | `SilverOctavioPC/boda-llely-drix`, rama `main`, al día         |
+| Sitio en producción  | https://boda-llely-drix.vercel.app                             |
+| Firebase             | Proyecto `boda-llely-drix`, plan Spark (gratis), región `nam5` |
+| Reglas de Firestore  | **Publicadas y verificadas** end-to-end                        |
+| Invitados en la base | **11 de prueba** (la base se limpió y se resembró)             |
+| Menú configurado     | Los 4 tiempos, con opciones de ejemplo para probar             |
+| Perfiles de acceso   | Novios (todo) y Escáner (solo marcar accesos)                  |
 
 Node está instalado en modo portable en
 `C:\Users\CEJA\AppData\Local\nodejs-portable\`, ya en el `Path` de usuario. Si
-una terminal dice *"npm no se reconoce"*, ábrela de nuevo.
+una terminal dice _"npm no se reconoce"_, ábrela de nuevo.
 
 Arrancar: `npm run dev` → http://localhost:5173
 
@@ -45,7 +45,7 @@ las listas infantiles vacías hacen que no se les pregunte.
 
 ### 2. Personalizar los textos del evento (2 minutos)
 
-[`src/lib/evento.js`](src/lib/evento.js) tiene cuatro campos en `'Por definir'`:
+[`src/lib/evento.js`](../src/lib/evento.js) tiene cuatro campos en `'Por definir'`:
 
 ```js
 fecha: 'Por definir',              // 'Sábado 14 de febrero de 2026'
@@ -76,8 +76,8 @@ solo abre el link y escanea, sin teclear nada.
 Después de la boda, desactiva la cuenta desde la misma pantalla.
 
 > Si cambias ese correo, cámbialo también en
-> [`src/lib/roles.js`](src/lib/roles.js) **y** en
-> [`firestore.rules`](firestore.rules), y republica las reglas.
+> [`src/lib/roles.js`](../src/lib/roles.js) **y** en
+> [`firestore.rules`](../firestore.rules), y republica las reglas.
 
 ### 4. Probar el escáner en el celular ⚠️
 
@@ -91,11 +91,11 @@ nunca.
 4. Escanea el QR de un invitado de prueba que ya confirmó y comprueba los tres
    resultados:
 
-| Caso | Debe salir |
-| --- | --- |
-| Confirmó y no ha entrado | 🟢 Verde, con el número de personas del grupo |
-| Escanear ese mismo QR otra vez | 🟡 Ámbar, "Ya registrado" |
-| Alguien que dijo No o está pendiente | 🔴 Rojo |
+| Caso                                 | Debe salir                                    |
+| ------------------------------------ | --------------------------------------------- |
+| Confirmó y no ha entrado             | 🟢 Verde, con el número de personas del grupo |
+| Escanear ese mismo QR otra vez       | 🟡 Ámbar, "Ya registrado"                     |
+| Alguien que dijo No o está pendiente | 🔴 Rojo                                       |
 
 Hazlo con el celular concreto que vayan a usar ese día, y con la batería y el
 brillo como estarán en el evento.
@@ -108,10 +108,10 @@ En **Lista Llely** hay ~15 filas sin nombre propio: `ESPOSA`, `ESPOSO`,
 `NOVIO DE MARISOL BACHO`, `ESPOSO MARISOL AREDA`, `Tania / amiga`,
 `PELANCHITO`.
 
-Su link diría literalmente *"Hola, ESPOSA"*.
+Su link diría literalmente _"Hola, ESPOSA"_.
 
 **Es más cómodo corregirlos en el Excel antes de migrar.** Después también se
-puede desde el panel con *Editar*, pero si ya mandaste los links, cambiar el
+puede desde el panel con _Editar_, pero si ya mandaste los links, cambiar el
 nombre no cambia el link (eso está bien) — solo es más trabajo manual.
 
 Otra opción: dejarlos fuera del Excel y sumarlos como **acompañantes** de la
@@ -180,7 +180,7 @@ escribir un campo nuevo, o cuando añadas un valor permitido (categoría, lista)
 La tabla completa está en [GUIA.md](GUIA.md).
 
 Añadir tiempos al menú **no** requiere tocar reglas: basta con editar `CURSOS` en
-[`src/lib/menu.js`](src/lib/menu.js) y el resto se genera solo.
+[`src/lib/menu.js`](../src/lib/menu.js) y el resto se genera solo.
 
 **Los links de prueba caducan.** Cada `npm run sembrar` borra los anteriores y
 crea otros con IDs nuevos. Los de [GUIA.md](GUIA.md) corresponden a la última

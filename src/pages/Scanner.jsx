@@ -5,12 +5,8 @@ import { collection, doc, onSnapshot, runTransaction, serverTimestamp } from 'fi
 import { db, COLECCION } from '../lib/firebase.js'
 import { normalizar } from '../lib/texto.js'
 import { esEscaner } from '../lib/roles.js'
-import { useAuth } from '../context/AuthContext.jsx'
-import {
-  nombresAcompanantes,
-  resumenAcompanantes,
-  totalPersonas,
-} from '../lib/acompanantes.js'
+import { useAuth } from '../context/contextoAuth.js'
+import { nombresAcompanantes, resumenAcompanantes, totalPersonas } from '../lib/acompanantes.js'
 
 const ID_LECTOR = 'lector-qr'
 // Tiempo que se ignora un mismo código tras leerlo, para que la cámara no
@@ -151,6 +147,12 @@ export default function Scanner() {
       scanner = new Html5Qrcode(ID_LECTOR, { verbose: false })
     } catch (e) {
       console.error(e)
+      // La regla avisa de renders en cascada por hacer setState dentro de un
+      // efecto. Aquí es una vía de error que solo se recorre si el constructor
+      // revienta: pasa una vez y deja la pantalla quieta con el mensaje. Sacarlo
+      // del efecto obligaría a un estado intermedio que enturbiaría el caso
+      // normal para ahorrar un render que nadie llega a ver.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setErrorCamara('No se pudo inicializar la cámara. Recarga la página.')
       return
     }
@@ -248,8 +250,7 @@ export default function Scanner() {
         <div>
           {errorCamara && (
             <p className="mb-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
-              {errorCamara}{' '}
-              <strong>Mientras tanto, usa “Buscar por nombre”.</strong>
+              {errorCamara} <strong>Mientras tanto, usa “Buscar por nombre”.</strong>
             </p>
           )}
           {/*
@@ -257,7 +258,10 @@ export default function Scanner() {
             html5-qrcode lo busca por id al arrancar y lanza si no existe:
             si se ocultara, volver aquí tras un error tumbaría la pantalla.
           */}
-          <div id={ID_LECTOR} className="overflow-hidden rounded-2xl border border-arena bg-black" />
+          <div
+            id={ID_LECTOR}
+            className="overflow-hidden rounded-2xl border border-arena bg-black"
+          />
         </div>
       ) : (
         <div>
@@ -272,8 +276,8 @@ export default function Scanner() {
           />
 
           <p className="mt-2 text-xs text-carbon/50">
-            Para quien llegue sin su código: sin celular, sin batería o sin el
-            mensaje. Toca su nombre para registrar el acceso.
+            Para quien llegue sin su código: sin celular, sin batería o sin el mensaje. Toca su
+            nombre para registrar el acceso.
           </p>
 
           <div className="mt-3 space-y-2">
@@ -353,9 +357,7 @@ export default function Scanner() {
             </p>
           )}
           {resultado.tipo === 'noEncontrado' && (
-            <p className="mt-1 text-sm opacity-90">
-              Este código no corresponde a ningún invitado.
-            </p>
+            <p className="mt-1 text-sm opacity-90">Este código no corresponde a ningún invitado.</p>
           )}
 
           <button

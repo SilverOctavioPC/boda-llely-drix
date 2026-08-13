@@ -252,8 +252,7 @@ export default function FormularioInvitado({ inicial, onGuardar, onCancelar, gua
             {adultos.map((p, i) => (
               <div key={i} className="rounded-xl bg-arena/30 p-3">
                 <p className="mb-2 text-xs font-medium text-carbon/60">
-                  Adulto {i + 1}{' '}
-                  <span className="font-normal text-carbon/40">(opcional)</span>
+                  Adulto {i + 1} <span className="font-normal text-carbon/40">(opcional)</span>
                 </p>
                 <input
                   value={p.nombre || ''}
@@ -293,8 +292,7 @@ export default function FormularioInvitado({ inicial, onGuardar, onCancelar, gua
             {ninos.map((p, i) => (
               <div key={i} className="rounded-xl bg-arena/30 p-3">
                 <p className="mb-2 text-xs font-medium text-carbon/60">
-                  Niño {i + 1}{' '}
-                  <span className="font-normal text-carbon/40">(opcional)</span>
+                  Niño {i + 1} <span className="font-normal text-carbon/40">(opcional)</span>
                 </p>
                 <input
                   value={p.nombre || ''}
@@ -333,8 +331,8 @@ export default function FormularioInvitado({ inicial, onGuardar, onCancelar, gua
         )}
 
         <p className="mt-4 rounded-xl bg-arena/50 px-3 py-2 text-center text-sm">
-          Este grupo entra con <strong>{total}</strong>{' '}
-          {total === 1 ? 'persona' : 'personas'} y <strong>un solo QR</strong>.
+          Este grupo entra con <strong>{total}</strong> {total === 1 ? 'persona' : 'personas'} y{' '}
+          <strong>un solo QR</strong>.
         </p>
       </fieldset>
 
@@ -355,8 +353,7 @@ export default function FormularioInvitado({ inicial, onGuardar, onCancelar, gua
           ))}
         </select>
         <p className="mt-2 text-xs text-carbon/50">
-          Útil cuando alguien te confirma por teléfono o en persona y no va a
-          abrir su link.
+          Útil cuando alguien te confirma por teléfono o en persona y no va a abrir su link.
         </p>
       </div>
 

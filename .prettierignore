@@ -1,0 +1,5 @@
+dist
+node_modules
+salida
+package-lock.json
+firestore.rules

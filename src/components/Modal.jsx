@@ -50,10 +50,11 @@ export default function Modal({ abierto, onCerrar, titulo, children }) {
       >
         <div className="mb-5 flex items-start justify-between gap-4">
           <h2 className="font-titulo text-2xl">{titulo}</h2>
+          {/* Área de 44px: la × sola era un objetivo de ~20px para el dedo. */}
           <button
             onClick={onCerrar}
             aria-label="Cerrar"
-            className="-mt-1 text-3xl leading-none text-carbon/40 hover:text-carbon"
+            className="-mr-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-3xl leading-none text-carbon/40 hover:bg-arena hover:text-carbon"
           >
             ×
           </button>

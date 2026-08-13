@@ -82,13 +82,7 @@ export function MenuDePersona({
  * Todas las personas del grupo de una vez. Lo usa el panel, donde los novios
  * quieren ver y ajustar el grupo completo sin navegar.
  */
-export default function SelectorMenu({
-  invitado,
-  config,
-  elecciones,
-  onCambio,
-  incompletas = [],
-}) {
+export default function SelectorMenu({ invitado, config, elecciones, onCambio, incompletas = [] }) {
   const marcados = new Set(incompletas.map((p) => p.indice))
 
   return (
@@ -99,9 +93,7 @@ export default function SelectorMenu({
           return (
             <div key={persona.indice} className="rounded-2xl border border-arena p-4">
               <p className="font-medium">{persona.nombre}</p>
-              <p className="mt-1 text-sm text-carbon/50">
-                Al ser bebé, no necesita elegir menú.
-              </p>
+              <p className="mt-1 text-sm text-carbon/50">Al ser bebé, no necesita elegir menú.</p>
             </div>
           )
         }

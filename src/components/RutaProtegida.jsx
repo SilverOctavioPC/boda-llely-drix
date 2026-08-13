@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext.jsx'
+import { useAuth } from '../context/contextoAuth.js'
 import { esEscaner } from '../lib/roles.js'
 import Cargando from './Cargando.jsx'
 

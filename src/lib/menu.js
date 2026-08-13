@@ -1,18 +1,20 @@
 import { leerAcompanantes } from './acompanantes.js'
 
 /**
- * Menú del banquete: tres tiempos — entrada, plato fuerte y bebida.
+ * Menú del banquete: cuatro tiempos — entrada, plato fuerte, postre y bebida.
+ * La lista viva es `CURSOS`, más abajo; esta cabecera solo describe la forma.
  *
  * Configuración (documento único configuracion/menu):
  *   {
  *     entradas: [{id, nombre}], entradasNinos: [...],
  *     platos:   [{id, nombre}], platosNinos:   [...],
- *     bebidas:  [{id, nombre}]
+ *     postres:  [{id, nombre}], postresNinos:  [...],
+ *     bebidas:  [{id, nombre}]                     <- comunes a adultos y niños
  *   }
  *
  * Elecciones, en el documento del invitado:
- *   menu:             { entrada, plato, bebida }        <- el titular
- *   menuAcompanantes: [{ entrada, plato, bebida }, ...] <- sus acompañantes
+ *   menu:             { entrada, plato, postre, bebida }        <- el titular
+ *   menuAcompanantes: [{ entrada, plato, postre, bebida }, ...] <- acompañantes
  *
  * IMPORTANTE: las elecciones de los acompañantes van en una lista APARTE, no
  * dentro de `acompanantes`. Si estuvieran ahí, para que el invitado pudiera
@@ -121,9 +123,7 @@ export function personasDelGrupo(invitado) {
  */
 export function personasQueEligen(invitado, config) {
   return personasDelGrupo(invitado).filter(
-    (p) =>
-      p.tipo !== 'bebe' &&
-      CURSOS.some((c) => opcionesPara(c.clave, p.tipo, config).length > 0)
+    (p) => p.tipo !== 'bebe' && CURSOS.some((c) => opcionesPara(c.clave, p.tipo, config).length > 0)
   )
 }
 
