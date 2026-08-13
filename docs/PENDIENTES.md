@@ -1,6 +1,6 @@
 # Pendientes
 
-Estado del proyecto y lo que falta. Actualizado al **11 de agosto de 2026**.
+Estado del proyecto y lo que falta. Actualizado al **13 de agosto de 2026**.
 
 Para el uso diario mira [GUIA.md](GUIA.md); para la instalación,
 [README.md](../README.md).
@@ -9,23 +9,29 @@ Para el uso diario mira [GUIA.md](GUIA.md); para la instalación,
 
 ## Dónde estamos
 
-**Todo lo construido funciona y está desplegado.**
+**Todo lo construido funciona, está desplegado y el escáner ya se probó en el
+celular de la puerta.**
 
-|                      | Estado                                                         |
-| -------------------- | -------------------------------------------------------------- |
-| Código en GitHub     | `SilverOctavioPC/boda-llely-drix`, rama `main`, al día         |
-| Sitio en producción  | https://boda-llely-drix.vercel.app                             |
-| Firebase             | Proyecto `boda-llely-drix`, plan Spark (gratis), región `nam5` |
-| Reglas de Firestore  | **Publicadas y verificadas** end-to-end                        |
-| Invitados en la base | **11 de prueba** (la base se limpió y se resembró)             |
-| Menú configurado     | Los 4 tiempos, con opciones de ejemplo para probar             |
-| Perfiles de acceso   | Novios (todo) y Escáner (solo marcar accesos)                  |
+|                      | Estado                                                                      |
+| -------------------- | --------------------------------------------------------------------------- |
+| Código en GitHub     | `SilverOctavioPC/boda-llely-drix`, rama `main`, al día                      |
+| Sitio en producción  | https://boda-llely-drix.vercel.app                                          |
+| Firebase             | Proyecto `boda-llely-drix`, plan Spark (gratis), región `nam5`              |
+| Reglas de Firestore  | **Publicadas y verificadas** end-to-end                                     |
+| Invitados en la base | **11 de prueba** (la base se limpió y se resembró)                          |
+| Menú configurado     | Los 4 tiempos, con opciones de ejemplo para probar                          |
+| Perfiles de acceso   | Novios (todo) y Escáner (solo marcar accesos), ambas cuentas creadas        |
+| **Escáner**          | **Probado en el celular real: verde, ámbar, rojo, grupos y búsqueda** ✅    |
+| Calidad del código   | ESLint sin avisos, Prettier aplicado, **79 tests** sobre la lógica del menú |
+| Contexto para Claude | [`CLAUDE.md`](../CLAUDE.md) en la raíz, con las invariantes del proyecto    |
 
 Node está instalado en modo portable en
 `C:\Users\CEJA\AppData\Local\nodejs-portable\`, ya en el `Path` de usuario. Si
 una terminal dice _"npm no se reconoce"_, ábrela de nuevo.
 
 Arrancar: `npm run dev` → http://localhost:5173
+
+Comprobar antes de subir: `npm run lint && npm test && npm run build`
 
 ---
 
@@ -56,51 +62,7 @@ limiteConfirmacion: 'Por definir', // se muestra en la página del invitado
 
 Mientras digan "Por definir", esas líneas no aparecen en la invitación.
 
-### 3. Crear la cuenta de la puerta
-
-Firebase Console → **Authentication → Users → Agregar usuario**:
-
-```
-escaner@bodallelydrix.com
-```
-
-Ponle una contraseña distinta de la de novios. Esa cuenta ya está limitada en
-las reglas: puede ver la lista y marcar accesos, pero **no** puede editar, ni
-crear, ni borrar invitados, ni tocar el menú. Al iniciar sesión va directa al
-escáner; el panel le queda cerrado.
-
-**Inicia sesión con ella una vez en el celular que vayan a usar en la puerta.**
-La sesión se guarda en el navegador y no caduca, así que esa noche esa persona
-solo abre el link y escanea, sin teclear nada.
-
-Después de la boda, desactiva la cuenta desde la misma pantalla.
-
-> Si cambias ese correo, cámbialo también en
-> [`src/lib/roles.js`](../src/lib/roles.js) **y** en
-> [`firestore.rules`](../firestore.rules), y republica las reglas.
-
-### 4. Probar el escáner en el celular ⚠️
-
-**Es lo único que no se puede probar en local y es lo que vas a usar en la
-puerta.** La cámara del navegador exige HTTPS; en `192.168.x.x:5173` no funciona
-nunca.
-
-1. Entra desde el celular a https://boda-llely-drix.vercel.app/admin/scanner
-2. Inicia sesión con `escaner@bodallelydrix.com` (la cuenta del paso anterior)
-3. Concede el permiso de cámara
-4. Escanea el QR de un invitado de prueba que ya confirmó y comprueba los tres
-   resultados:
-
-| Caso                                 | Debe salir                                    |
-| ------------------------------------ | --------------------------------------------- |
-| Confirmó y no ha entrado             | 🟢 Verde, con el número de personas del grupo |
-| Escanear ese mismo QR otra vez       | 🟡 Ámbar, "Ya registrado"                     |
-| Alguien que dijo No o está pendiente | 🔴 Rojo                                       |
-
-Hazlo con el celular concreto que vayan a usar ese día, y con la batería y el
-brillo como estarán en el evento.
-
-### 5. Corregir nombres en el Excel (antes de migrar)
+### 3. Corregir nombres en el Excel (antes de migrar)
 
 En **Lista Llely** hay ~15 filas sin nombre propio: `ESPOSA`, `ESPOSO`,
 `GEMELAS`, `GEMELA .`, `PAREJA DE IVÁN`, `ESPOSA DE ALBERTO`, `AMIGA ALBERTO`,
@@ -118,7 +80,7 @@ Otra opción: dejarlos fuera del Excel y sumarlos como **acompañantes** de la
 persona a la que van pegados. Encaja mejor con el modelo, porque un acompañante
 no necesita nombre ni link propio.
 
-### 6. Migrar los 210 invitados reales
+### 4. Migrar los 210 invitados reales
 
 Solo cuando estés conforme con cómo funciona todo, porque **genera los links
 definitivos** y a partir de ahí cambiarlos es un lío.
@@ -145,12 +107,71 @@ distintas con links distintos.
 
 `npm run migrar` se niega a correr si ya hay datos, para no duplicar.
 
-### 7. Repasar antes del día
+### 5. Repasar antes del día
 
 - Un invitado real abre su link, confirma y le sale el QR.
 - El panel refleja su confirmación en tiempo real.
 - El conteo del banquete cuadra con lo que le vas a pasar al salón.
 - Descarga el CSV y compruébalo con calma.
+
+---
+
+## Ya resuelto (13 de agosto)
+
+### El escáner está probado en el celular de la puerta ✅
+
+Era el único riesgo que no se podía cerrar en local. Se comprobó, con el celular
+real y sobre el sitio desplegado:
+
+| Caso                                     | Resultado                                   |
+| ---------------------------------------- | ------------------------------------------- |
+| Invitado que confirmó                    | 🟢 Verde                                    |
+| El mismo QR otra vez                     | 🟡 Ámbar, "Ya registrado"                   |
+| Grupo de 4 (Patricia Alcázar)            | 🟢 Verde, **4 personas y los tres nombres** |
+| Alguien que dijo que no, por nombre      | 🔴 Rojo, "Aparece como No"                  |
+| Búsqueda por nombre, con acento y sin él | Encuentra igual                             |
+
+De la prueba salieron dos mejoras, ya aplicadas:
+
+- **La lectura era lenta.** Ahora usa el detector de códigos del propio
+  navegador en vez de decodificar por JavaScript. La diferencia es grande, y
+  además importa porque casi nadie imprimirá el pase: lo enseñarán desde la
+  pantalla del celular, que brilla y se mueve. El recuadro de lectura se adapta
+  al visor y el QR del invitado pasó de 220 a 260px.
+- **El resultado salía debajo de la cámara**, o sea fuera de pantalla en un
+  celular: escaneabas y tenías que bajar la vista. Ahora ocupa la pantalla
+  entera, con vibración. Mientras está visible la cámara no lee, para que el
+  celular del siguiente invitado no reemplace un resultado sin confirmar.
+
+> **Ojo:** no hay forma de desmarcar una entrada desde el panel. Si escaneas a
+> alguien por error, se queda como "ya entró". No es grave —al volver a
+> escanearlo sale en ámbar y el personal verifica por nombre— pero al terminar
+> las pruebas conviene `npm run sembrar` para dejar los datos limpios.
+
+### Una fuga de credenciales, cerrada
+
+`vite.config.js` tenía `host: true`, que publicaba el servidor de desarrollo en
+toda la red local. Como Vite sirve desde la raíz del proyecto,
+`http://<tu-ip>:5173/serviceAccount.json` devolvía la **clave privada de
+administrador**, que da acceso total a Firestore saltándose las reglas. Se
+verificó explotable y se cerró.
+
+`host: true` no servía para nada: se puso para probar el escáner desde el móvil,
+y la cámara exige HTTPS. **No lo vuelvas a poner** ni uses `npm run dev --host`.
+
+Se comprobó además que ni `serviceAccount.json` ni `.env` entraron nunca en
+ningún commit del historial. La exposición fue solo la red de casa, así que
+rotar la clave es opcional.
+
+### Red de seguridad automática
+
+- **79 tests** (`npm test`) sobre la lógica del menú, los acompañantes, los roles
+  y unas guardas sobre `firestore.rules`. Es donde vive el número que se le pasa
+  al salón: un fallo ahí es comida mal pedida, no un bug visual.
+- **ESLint y Prettier** (`npm run lint`, `npm run format`).
+- **Áreas táctiles**: los botones de cada fila del panel medían 24px y estaban
+  pegados, con _Borrar_ al lado de _Editar_. Ahora hay un mínimo garantizado y
+  el destructivo va separado.
 
 ---
 
