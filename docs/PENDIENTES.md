@@ -9,21 +9,22 @@ Para el uso diario mira [GUIA.md](GUIA.md); para la instalación,
 
 ## Dónde estamos
 
-**Todo lo construido funciona, está desplegado y el escáner ya se probó en el
-celular de la puerta.**
+**El sistema está terminado y probado. Lo que falta es contenido: el menú, los
+textos del evento y dar de alta a los invitados.**
 
-|                      | Estado                                                                      |
-| -------------------- | --------------------------------------------------------------------------- |
-| Código en GitHub     | `SilverOctavioPC/boda-llely-drix`, rama `main`, al día                      |
-| Sitio en producción  | https://boda-llely-drix.vercel.app                                          |
-| Firebase             | Proyecto `boda-llely-drix`, plan Spark (gratis), región `nam5`              |
-| Reglas de Firestore  | **Publicadas y verificadas** end-to-end                                     |
-| Invitados en la base | **11 de prueba** (la base se limpió y se resembró)                          |
-| Menú configurado     | Los 4 tiempos, con opciones de ejemplo para probar                          |
-| Perfiles de acceso   | Novios (todo) y Escáner (solo marcar accesos), ambas cuentas creadas        |
-| **Escáner**          | **Probado en el celular real: verde, ámbar, rojo, grupos y búsqueda** ✅    |
-| Calidad del código   | ESLint sin avisos, Prettier aplicado, **79 tests** sobre la lógica del menú |
-| Contexto para Claude | [`CLAUDE.md`](../CLAUDE.md) en la raíz, con las invariantes del proyecto    |
+|                       | Estado                                                                   |
+| --------------------- | ------------------------------------------------------------------------ |
+| Código en GitHub      | `SilverOctavioPC/boda-llely-drix`, rama `main`                           |
+| Sitio en producción   | https://boda-llely-drix.vercel.app                                       |
+| Firebase              | Proyecto `boda-llely-drix`, plan Spark (gratis), región `nam5`           |
+| Reglas de Firestore   | **Publicadas y verificadas** — lista blanca de dos cuentas               |
+| **Invitados**         | **0. La base está vacía, lista para los reales**                         |
+| Menú configurado      | Plato y bebida. **Entrada y postre siguen vacíos** → no se preguntan     |
+| Perfiles de acceso    | `novios@` (todo) y `escaner@` (solo marcar accesos)                      |
+| **Escáner**           | **Probado en el celular de la puerta: los 5 casos** ✅                   |
+| Cómo entran los datos | **A mano desde el panel.** La importación desde Excel se eliminó         |
+| Calidad del código    | ESLint sin avisos, Prettier aplicado, **84 tests**                       |
+| Contexto para Claude  | [`CLAUDE.md`](../CLAUDE.md) en la raíz, con las invariantes del proyecto |
 
 Node está instalado en modo portable en
 `C:\Users\CEJA\AppData\Local\nodejs-portable\`, ya en el `Path` de usuario. Si
@@ -70,17 +71,19 @@ repartidas en varias filas, ~15 personas sin nombre propio (`ESPOSA`,
 `PAREJA DE IVÁN`, `GEMELAS`)— y arrastrar eso obligaba a corregirlo después,
 con los links ya repartidos. Toda la maquinaria de migración se eliminó.
 
-Antes de empezar, deja la base vacía:
+**La base ya está vacía**: los 11 ficticios se borraron y `npm run verificar`
+confirma 0 documentos. Si en algún momento vuelves a sembrar para probar algo,
+límpialos antes de seguir:
 
 ```powershell
-npm run limpiar-prueba -- --si   # borra los 11 ficticios
+npm run limpiar-prueba -- --si   # borra los sembrados
 npm run verificar                # debe decir 0 documentos
 ```
 
-Si no dice cero, es que queda alguno que diste de alta a mano probando: esos no
-llevan la marca `esPrueba` y hay que borrarlos desde el panel.
+Si no dijera cero, es que queda alguno que diste de alta a mano: esos no llevan
+la marca `esPrueba` y hay que borrarlos desde el panel.
 
-Después, `/admin` → **Agregar invitado**.
+Para dar de alta: `/admin` → **Agregar invitado**.
 
 **Lo que más trabajo ahorra: usar los acompañantes.** Una familia de cuatro es
 **un invitado con tres acompañantes**, no cuatro invitados. Reciben un solo link
@@ -123,6 +126,50 @@ te dicen cuál es cuál.
 ---
 
 ## Ya resuelto (13 de agosto)
+
+### Se eliminó la importación desde Excel
+
+**Decisión tomada: los invitados se dan de alta a mano desde el panel.** El
+archivo de origen venía con acompañantes escritos de tres formas distintas,
+familias repartidas en varias filas y ~15 personas sin nombre propio (`ESPOSA`,
+`PAREJA DE IVÁN`, `GEMELAS`). Arrastrar eso obligaba a corregirlo después, con
+los links ya repartidos.
+
+Se quitaron `scripts/migrar.js`, `scripts/lib/leerExcel.js`, la dependencia
+`exceljs`, la variable `EXCEL_PATH` y los campos que solo escribía la migración
+(`origen`, `confirmacionExcel`, `sexoOriginalExcel`, `posibleAsistencia`,
+`saveTheDate`), que se guardaban en cada alta sin que nada los leyera.
+
+`npm run links` sigue existiendo y es igual de necesario: ahora ordena por lista
+y nombre, y la columna `Fila Excel` se cambió por `Acompanantes`.
+
+### Solo dos cuentas tienen permiso a algo
+
+Antes, la regla decía `esNovios() = tener sesión && no ser el escáner`. Es decir:
+**cualquier cuenta que llegara a existir en el proyecto tenía control total** —
+leer la lista entera, editarla, borrarla, cambiar el menú. Bastaba con crear una
+de más en la consola.
+
+Ahora es una lista blanca con los dos correos exactos. Cualquier otra cuenta no
+puede ni leer la lista.
+
+No era una fuga abierta —solo existen esas dos cuentas y no hay registro
+público—, sino blindaje contra un error futuro. Publicado y verificado: un
+invitado sigue abriendo su link (200), la lista sigue cerrada al público (403).
+
+### El login ya no te deja encerrado en una cuenta
+
+Dos problemas distintos, los dos arreglados:
+
+- **`/login` redirigía en silencio si ya había sesión.** Quien había entrado con
+  la cuenta del escáner en un navegador no podía ver el formulario nunca más
+  —`/admin` también lo devolvía al escáner— y la sesión de Firebase no caduca.
+  Ahora esa pantalla dice con qué cuenta estás y ofrece **Continuar** o **Entrar
+  con otra cuenta**.
+- **Al iniciar sesión te llevaba "a donde ibas", ignorando el rol.** Si habías
+  pasado por `/admin/scanner` sin sesión, entrar como novios te dejaba en el
+  escáner. Ahora cada cuenta va siempre a su sitio: novios al panel, puerta al
+  escáner.
 
 ### El escáner está probado en el celular de la puerta ✅
 
@@ -171,13 +218,39 @@ rotar la clave es opcional.
 
 ### Red de seguridad automática
 
-- **79 tests** (`npm test`) sobre la lógica del menú, los acompañantes, los roles
-  y unas guardas sobre `firestore.rules`. Es donde vive el número que se le pasa
-  al salón: un fallo ahí es comida mal pedida, no un bug visual.
+Antes no había linter, ni formatter, ni tests: `npm run build` era la única
+comprobación. Ahora:
+
+- **84 tests** (`npm test`, medio segundo) sobre la lógica del menú, los
+  acompañantes, los roles y unas guardas sobre `firestore.rules`. Es donde vive
+  el número que se le pasa al salón: un fallo ahí es comida mal pedida, no un
+  bug visual. Las guardas de las reglas fallan si alguien cambia un correo en
+  `roles.js` y olvida `firestore.rules`, o si `esNovios()` vuelve a ser
+  "cualquiera que no sea el escáner".
 - **ESLint y Prettier** (`npm run lint`, `npm run format`).
-- **Áreas táctiles**: los botones de cada fila del panel medían 24px y estaban
-  pegados, con _Borrar_ al lado de _Editar_. Ahora hay un mínimo garantizado y
-  el destructivo va separado.
+
+De pasarle el linter al código que ya existía salieron tres avisos en 3235
+líneas. El que valía la pena era un `setState` dentro de un `useEffect` que
+duplicaba el render en cada cambio de filtro de la tabla.
+
+### Áreas táctiles y responsive
+
+La base estaba bien —mobile-first, la tabla con scroll propio, `font-size: 16px`
+en los inputs para que iOS no haga zoom—, pero los pulsables se quedaban cortos:
+
+- Los cuatro botones de cada fila del panel medían **24px y estaban pegados**,
+  con _Borrar_ justo al lado de _Editar_. Ahora son más altos, van separados y el
+  destructivo queda aislado.
+- El resto de botones tiene un mínimo garantizado de 44px desde `.btn`, así que
+  los sitios que rebajan el alto con `py-2` siguen siendo tocables.
+
+### Documentación
+
+- [`CLAUDE.md`](../CLAUDE.md) en la raíz: las invariantes que no se ven leyendo
+  un solo archivo (separación de bundles, `menuAcompanantes` aparte, los correos
+  duplicados entre `roles.js` y las reglas).
+- Las guías se movieron a `docs/`. El README quedó como instalación y modelo de
+  datos.
 
 ---
 
@@ -211,7 +284,22 @@ Añadir tiempos al menú **no** requiere tocar reglas: basta con editar `CURSOS`
 
 **Los links de prueba caducan.** Cada `npm run sembrar` borra los anteriores y
 crea otros con IDs nuevos. Los de [GUIA.md](GUIA.md) corresponden a la última
-siembra.
+siembra, y la base está vacía desde que se borraron.
+
+**Publicar las reglas es un paso aparte.** `git push` no las publica: Vercel
+despliega el frontend, y Firebase aplica lo último que se publicó en su consola.
+Mientras no lo hagas, el archivo del repo y lo que se aplica de verdad son cosas
+distintas.
+
+**Una entrada registrada no se puede deshacer** desde el panel. Si escaneas a
+alguien por error, se queda como que ya entró.
+
+**Los invitados creados desde el panel no llevan la marca `esPrueba`**, así que
+`limpiar-prueba` no los borra. Ya pasó una vez: quedó un invitado `x` de una
+prueba contando como asistente. Compruébalo con `npm run verificar`.
+
+**Los scripts de `scripts/` usan el Admin SDK y se saltan las reglas.** Que
+`npm run sembrar` funcione no dice nada sobre si las reglas están bien.
 
 **Vercel despliega solo** con cada push a `main`.
 
