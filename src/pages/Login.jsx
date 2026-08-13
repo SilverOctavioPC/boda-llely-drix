@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/contextoAuth.js'
 import Cargando from '../components/Cargando.jsx'
 import { EVENTO } from '../lib/evento.js'
@@ -26,7 +26,6 @@ function mensajeDeError(codigo) {
 export default function Login() {
   const { usuario, cargando, entrar, salir } = useAuth()
   const navigate = useNavigate()
-  const location = useLocation()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -45,7 +44,7 @@ export default function Login() {
     caduca, así que el encierro era permanente.
   */
   if (usuario) {
-    const inicio = location.state?.destino || inicioDe(usuario)
+    const inicio = inicioDe(usuario)
     return (
       <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
         <div className="mb-8 text-center">
@@ -77,7 +76,15 @@ export default function Login() {
     setError('')
     try {
       const credencial = await entrar(email.trim(), password)
-      navigate(location.state?.destino || inicioDe(credencial.user), { replace: true })
+      /*
+        Cada cuenta va SIEMPRE a su sitio: los novios al panel, la puerta al
+        escáner. No se respeta "la ruta a la que ibas".
+
+        Antes sí, y provocaba esto: quien abría /admin/scanner sin sesión dejaba
+        guardado ese destino, así que al entrar como novios aterrizaba en el
+        escáner en vez de en el panel. El destino guardado ignoraba el rol.
+      */
+      navigate(inicioDe(credencial.user), { replace: true })
     } catch (err) {
       setError(mensajeDeError(err.code))
     } finally {

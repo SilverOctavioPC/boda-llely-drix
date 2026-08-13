@@ -1,4 +1,4 @@
-import { Navigate, useLocation } from 'react-router-dom'
+import { Navigate } from 'react-router-dom'
 import { useAuth } from '../context/contextoAuth.js'
 import { esEscaner } from '../lib/roles.js'
 import Cargando from './Cargando.jsx'
@@ -12,13 +12,15 @@ import Cargando from './Cargando.jsx'
  */
 export default function RutaProtegida({ children, soloNovios = false }) {
   const { usuario, cargando } = useAuth()
-  const location = useLocation()
 
   if (cargando) return <Cargando texto="Verificando sesión…" />
 
   if (!usuario) {
-    // Guardamos a dónde iba para volver ahí después del login.
-    return <Navigate to="/login" replace state={{ destino: location.pathname }} />
+    // No se guarda a dónde iba: tras el login, cada cuenta va siempre a su
+    // sitio (novios al panel, puerta al escáner). Respetar la ruta anterior
+    // hacía que los novios aterrizaran en el escáner por haber pasado antes
+    // por /admin/scanner sin sesión.
+    return <Navigate to="/login" replace />
   }
 
   if (soloNovios && esEscaner(usuario)) {
