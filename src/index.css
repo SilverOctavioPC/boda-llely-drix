@@ -3,12 +3,80 @@
 @tailwind utilities;
 
 @layer base {
+  /*
+    ============================================================
+    CAPA 1 — LA MARCA
+    ============================================================
+    Para recolorear el sitio entero se editan SOLO estos valores.
+    Nada más en todo el proyecto tiene un color escrito a mano.
+
+    Van en canales RGB sueltos (`95 109 83`) y no en hex porque es lo que
+    necesita `rgb(var(--x) / <alpha-value>)` en tailwind.config.js para que
+    sigan funcionando los modificadores de opacidad. Con un hex aquí,
+    `text-texto/50` deja de aplicar el alfa y no avisa.
+  */
+  :root {
+    --blanco: 255 255 255;
+    --hueso: 244 244 241;
+    --lino: 233 231 224;
+    --lino-fuerte: 214 210 199;
+    --tinta: 46 44 41;
+
+    --salvia: 138 154 123;
+    --salvia-oscura: 95 109 83;
+    --salvia-profunda: 76 88 68;
+
+    --oro: 183 144 85;
+    --ambar: 150 112 31;
+    --ladrillo: 168 64 60;
+    --ladrillo-profundo: 140 50 47;
+
+    /*
+      ============================================================
+      CAPA 2 — EL USO
+      ============================================================
+      El resto del proyecto habla solo este idioma. Los nombres dicen para
+      qué sirve el color, no de qué color es.
+
+      Que `accion` y `confirmado` apunten a la misma primitiva no es una
+      redundancia: son dos decisiones distintas que hoy coinciden. Si mañana
+      el confirmado tiene que ser otro verde, se separan aquí sin tocar una
+      sola pantalla.
+    */
+    --color-fondo: var(--blanco);
+    --color-superficie: var(--blanco);
+    --color-reposo: var(--hueso);
+    --color-linea: var(--lino);
+    --color-linea-fuerte: var(--lino-fuerte);
+
+    --color-texto: var(--tinta);
+
+    --color-accion: var(--salvia-oscura);
+    --color-accion-fuerte: var(--salvia-profunda);
+    --color-accion-viva: var(--salvia);
+    --color-sobre-color: var(--blanco);
+
+    /*
+      El oro hace UN solo trabajo: filetes de 1px. No es texto ni relleno.
+      Antes adornaba encabezados y además marcaba a quien no había
+      respondido; un color que significa algo no puede a la vez decorar, y
+      con 2.9:1 contra el blanco tampoco daba el contraste para ser texto.
+      Lo que era `text-oro` de estado ahora es `text-espera`.
+    */
+    --color-filete: var(--oro);
+
+    --color-confirmado: var(--salvia-oscura);
+    --color-espera: var(--ambar);
+    --color-alerta: var(--ladrillo);
+    --color-alerta-fuerte: var(--ladrillo-profundo);
+  }
+
   html {
     -webkit-text-size-adjust: 100%;
   }
 
   body {
-    @apply bg-crema text-carbon antialiased;
+    @apply bg-fondo text-texto antialiased;
     font-family:
       ui-sans-serif,
       system-ui,
@@ -24,6 +92,30 @@
   select {
     font-size: 16px;
   }
+
+  /*
+    Sin esto, el placeholder se queda con el gris por defecto de Tailwind
+    (#9CA3AF): un color escrito a mano que no seguiría a un cambio de paleta.
+  */
+  ::placeholder {
+    @apply text-texto/60;
+  }
+
+  /*
+    Quien tiene activado "reducir movimiento" en su sistema lo hace por algo:
+    hay gente a la que las animaciones le provocan mareo o migraña. Se respeta
+    en todo el sitio, incluido el giro del indicador de carga.
+  */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
 
 @layer components {
@@ -32,26 +124,70 @@
     fallar. Va aquí y no en cada botón porque varios sitios rebajan el alto con
     `py-2 text-sm` para que quepan; el mínimo aguanta por debajo de ese ajuste.
   */
+  /*
+    `focus-visible` y no `focus`: el anillo aparece al navegar con teclado,
+    pero no queda pegado tras un toque con el dedo. Sin él, quien no usa ratón
+    no sabe dónde está — el navegador pinta un contorno por defecto que aquí
+    se pierde sobre los botones de color.
+  */
   .btn {
     @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-5 py-3
            font-medium transition active:scale-[.98]
+           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+           focus-visible:outline-accion
            disabled:cursor-not-allowed disabled:opacity-50;
   }
 
   .btn-primario {
-    @apply btn bg-salvia text-white hover:bg-salviaOscuro;
+    @apply btn bg-accion text-sobreColor hover:bg-accionFuerte;
   }
 
   .btn-secundario {
-    @apply btn border border-arena bg-white text-carbon hover:bg-arena;
+    @apply btn border border-lineaFuerte bg-superficie text-texto hover:bg-reposo;
   }
 
   .tarjeta {
-    @apply rounded-2xl border border-arena bg-white p-6 shadow-sm;
+    @apply rounded-2xl border border-linea bg-superficie p-6 shadow-sm;
   }
 
   .campo {
-    @apply w-full rounded-xl border border-arena bg-white px-4 py-3
-           outline-none focus:border-salvia focus:ring-2 focus:ring-salvia/20;
+    @apply w-full rounded-xl border border-lineaFuerte bg-superficie px-4 py-3
+           outline-none focus:border-accion focus:ring-2 focus:ring-accion/20;
+  }
+
+  /*
+    Estado. Lleva punto ADEMÁS del color: quien no distingue el verde del
+    ámbar sigue viendo formas distintas, y en la puerta del salón, con el
+    celular al sol, el punto se ve antes que el tono.
+  */
+  .pastilla {
+    @apply inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5
+           text-xs font-medium;
+  }
+
+  .pastilla::before {
+    @apply h-1.5 w-1.5 rounded-full bg-current;
+    content: '';
+  }
+
+  .pastilla-confirmado {
+    @apply pastilla bg-confirmado/15 text-confirmado;
+  }
+
+  .pastilla-espera {
+    @apply pastilla bg-espera/15 text-espera;
+  }
+
+  .pastilla-alerta {
+    @apply pastilla bg-alerta/15 text-alerta;
+  }
+
+  .pastilla-neutra {
+    @apply pastilla bg-reposo text-texto/60;
+  }
+
+  /* Filete de adorno. El único sitio donde aparece el oro. */
+  .filete {
+    @apply h-px w-12 bg-filete/70;
   }
 }

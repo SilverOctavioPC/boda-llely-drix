@@ -30,10 +30,13 @@ const LIMITE_MENSAJE = 500
 function Encabezado() {
   return (
     <header className="mb-8 text-center">
-      <p className="text-xs uppercase tracking-[0.3em] text-oro">Nuestra boda</p>
+      {/* Etiqueta, no estado: por eso va en texto tenue y no en ámbar. */}
+      <p className="text-xs uppercase tracking-[0.3em] text-texto/50">Nuestra boda</p>
       <h1 className="mt-2 font-titulo text-4xl">{EVENTO.novios}</h1>
+      {/* El único sitio de todo el sitio donde aparece el oro. */}
+      <div className="filete mx-auto mt-3" />
       {EVENTO.fecha !== 'Por definir' && (
-        <p className="mt-2 text-sm text-carbon/60">
+        <p className="mt-2 text-sm text-texto/60">
           {EVENTO.fecha} · {EVENTO.lugar}
         </p>
       )}
@@ -62,7 +65,12 @@ function CodigoQR({ invitadoId, nombre }) {
 
   return (
     <div className="flex flex-col items-center">
-      <div ref={contenedor} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-arena">
+      {/*
+        Blanco literal, no `bg-superficie`: el QR necesita su marco claro para
+        que el lector lo distinga. Si algún día la superficie deja de ser
+        blanca, este marco tiene que seguir siéndolo.
+      */}
+      <div ref={contenedor} className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-linea">
         <QRCodeCanvas
           value={invitadoId}
           size={260}
@@ -82,10 +90,10 @@ function CodigoQR({ invitadoId, nombre }) {
         una pantalla a brillo bajo cuesta de leer. Decirlo aquí ahorra segundos
         por invitado en la puerta.
       */}
-      <p className="mt-3 max-w-xs text-center text-xs text-carbon/50">
+      <p className="mt-3 max-w-xs text-center text-xs text-texto/70">
         Guarda una captura de este código. Lo presentarás en la entrada.
         <br />
-        <span className="mt-1 inline-block font-medium text-carbon/70">
+        <span className="mt-1 inline-block font-medium text-texto/70">
           Sube el brillo de tu pantalla al mostrarlo.
         </span>
       </p>
@@ -209,7 +217,7 @@ export default function Rsvp() {
       <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
         <Encabezado />
         <div className="tarjeta text-center">
-          <p className="text-carbon/70">
+          <p className="text-texto/70">
             No encontramos esta invitación. Verifica que hayas abierto el link completo tal como te
             lo enviamos, o escríbenos directamente.
           </p>
@@ -266,6 +274,18 @@ export default function Rsvp() {
     })
   }
 
+  /*
+    Volver a dejar la respuesta en blanco. Rebobina también el asistente: si
+    cambia de "sí" a "no" y luego se arrepiente, empezar el menú por la mitad
+    sería desconcertante.
+  */
+  function cambiarRespuesta() {
+    setRespuesta(null)
+    setPaso(0)
+    setError('')
+    setErrorPaso('')
+  }
+
   const totalDelGrupo = totalPersonas(invitado)
   const vaAcompanado = totalDelGrupo > 1
   const textoAcompanantes = resumenAcompanantes(invitado)
@@ -281,7 +301,7 @@ export default function Rsvp() {
           {invitado.confirmacion === 'Si' ? (
             <>
               <h2 className="font-titulo text-2xl">¡Gracias por confirmar, {invitado.nombre}!</h2>
-              <p className="mt-2 text-carbon/70">
+              <p className="mt-2 text-texto/70">
                 {vaAcompanado
                   ? `Los esperamos. Este pase vale por ${totalDelGrupo} personas:`
                   : 'Te esperamos. Este es tu pase de entrada:'}
@@ -290,22 +310,22 @@ export default function Rsvp() {
                 <CodigoQR invitadoId={invitado.id} nombre={invitado.nombre} />
               </div>
               {vaAcompanado && (
-                <p className="mt-4 text-center text-sm text-carbon/60">
+                <p className="mt-4 text-center text-sm text-texto/60">
                   Incluye a {textoAcompanantes}. Con un solo código entran todos, no hace falta que
                   cada quien traiga el suyo.
                 </p>
               )}
               {hayMenuConfigurado(config) && (
-                <div className="mt-6 rounded-xl bg-arena/50 px-4 py-3 text-sm">
+                <div className="mt-6 rounded-xl bg-reposo px-4 py-3 text-sm">
                   <p className="font-medium">Su menú</p>
-                  <ul className="mt-2 space-y-1 text-carbon/70">
+                  <ul className="mt-2 space-y-1 text-texto/70">
                     {personas.map((p) => {
                       if (p.tipo === 'bebe') return null
                       const elegido = resumenEleccion(invitado, p, config)
                       return (
                         <li key={p.indice}>
-                          <span className="text-carbon">{p.nombre}:</span>{' '}
-                          {elegido || <span className="text-carbon/40">sin elegir</span>}
+                          <span className="text-texto">{p.nombre}:</span>{' '}
+                          {elegido || <span className="text-texto/60">sin elegir</span>}
                         </li>
                       )
                     })}
@@ -314,7 +334,7 @@ export default function Rsvp() {
               )}
 
               {invitado.restricciones && (
-                <p className="mt-4 rounded-xl bg-arena/50 px-4 py-3 text-sm text-carbon/70">
+                <p className="mt-4 rounded-xl bg-reposo px-4 py-3 text-sm text-texto/70">
                   <span className="font-medium">Anotamos:</span> {invitado.restricciones}
                 </p>
               )}
@@ -322,13 +342,13 @@ export default function Rsvp() {
           ) : (
             <>
               <h2 className="font-titulo text-2xl">Gracias por avisarnos, {invitado.nombre}</h2>
-              <p className="mt-2 text-carbon/70">
+              <p className="mt-2 text-texto/70">
                 Lamentamos que no puedas acompañarnos. Te vamos a extrañar.
               </p>
             </>
           )}
 
-          <p className="mt-6 text-center text-xs text-carbon/50">
+          <p className="mt-6 text-center text-xs text-texto/50">
             ¿Te equivocaste o cambiaron tus planes? Escríbenos y lo ajustamos.
           </p>
         </div>
@@ -336,48 +356,70 @@ export default function Rsvp() {
         /* --- Aún no responde: formulario --- */
         <div className="tarjeta">
           <h2 className="font-titulo text-2xl">Hola, {invitado.nombre}</h2>
-          <p className="mt-2 text-carbon/70">
-            {vaAcompanado
-              ? 'Nos encantaría que nos acompañaran. ¿Podrán asistir?'
-              : 'Nos encantaría que nos acompañaras. ¿Podrás asistir?'}
-          </p>
+          {!respuesta && (
+            <p className="mt-2 text-texto/70">
+              {vaAcompanado
+                ? 'Nos encantaría que nos acompañaran. ¿Podrán asistir?'
+                : 'Nos encantaría que nos acompañaras. ¿Podrás asistir?'}
+            </p>
+          )}
 
           {vaAcompanado && (
-            <p className="mt-3 rounded-xl bg-arena/50 px-4 py-3 text-sm text-carbon/70">
+            <p className="mt-3 rounded-xl bg-reposo px-4 py-3 text-sm text-texto/70">
               Tu invitación incluye <strong>{totalDelGrupo} lugares</strong>: tú y{' '}
               {textoAcompanantes}. Al confirmar, respondes por todos.
             </p>
           )}
-          {EVENTO.limiteConfirmacion !== 'Por definir' && (
-            <p className="mt-1 text-sm text-carbon/50">
+          {!respuesta && EVENTO.limiteConfirmacion !== 'Por definir' && (
+            <p className="mt-1 text-sm text-texto/60">
               Confirma antes del {EVENTO.limiteConfirmacion}.
             </p>
           )}
 
-          <div className="mt-6 grid grid-cols-2 gap-3">
-            <button
-              onClick={() => setRespuesta('Si')}
-              aria-pressed={respuesta === 'Si'}
-              className={`btn border ${
-                respuesta === 'Si'
-                  ? 'border-salvia bg-salvia text-white'
-                  : 'border-arena bg-white text-carbon'
-              }`}
-            >
-              Sí asistiré
-            </button>
-            <button
-              onClick={() => setRespuesta('No')}
-              aria-pressed={respuesta === 'No'}
-              className={`btn border ${
-                respuesta === 'No'
-                  ? 'border-carbon bg-carbon text-white'
-                  : 'border-arena bg-white text-carbon'
-              }`}
-            >
-              No podré
-            </button>
-          </div>
+          {/*
+            La pregunta solo se hace UNA vez. En cuanto responde, los dos
+            botones se recogen en una línea con lo que eligió y un "Cambiar":
+            seguir enseñando "¿Podrás asistir?" encima del menú que acaba de
+            elegir hace pensar que no se guardó nada y que hay que empezar otra
+            vez. Sigue pudiendo cambiarla hasta que le da a enviar.
+          */}
+          {!respuesta ? (
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setRespuesta('Si')}
+                className="btn border border-accion bg-accion text-sobreColor"
+              >
+                Sí, asistiré
+              </button>
+              <button
+                onClick={() => setRespuesta('No')}
+                className="btn border border-linea bg-superficie text-texto"
+              >
+                No podré
+              </button>
+            </div>
+          ) : (
+            <div className="mt-6 flex items-center justify-between gap-3 rounded-xl border border-linea px-4 py-3">
+              <div>
+                <p className="text-xs uppercase tracking-wide text-texto/60">Tu respuesta</p>
+                <p className="font-medium">
+                  {respuesta === 'Si'
+                    ? vaAcompanado
+                      ? 'Sí, asistiremos'
+                      : 'Sí, asistiré'
+                    : vaAcompanado
+                      ? 'No podremos'
+                      : 'No podré'}
+                </p>
+              </div>
+              <button
+                onClick={cambiarRespuesta}
+                className="btn-secundario shrink-0 px-4 py-2 text-sm"
+              >
+                Cambiar
+              </button>
+            </div>
+          )}
 
           {/* --- Menú, una persona por pantalla --- */}
           {enAsistente && (
@@ -408,19 +450,19 @@ export default function Rsvp() {
           {!enAsistente && (
             <>
               {respuesta === 'Si' && personasMenu.length > 0 && (
-                <div className="mt-6 rounded-xl bg-arena/50 px-4 py-3 text-sm">
+                <div className="mt-6 rounded-xl bg-reposo px-4 py-3 text-sm">
                   <div className="flex items-start justify-between gap-3">
-                    <ul className="space-y-1 text-carbon/70">
+                    <ul className="space-y-1 text-texto/70">
                       {personasMenu.map((p) => (
                         <li key={p.indice}>
-                          <span className="text-carbon">{p.nombre}:</span>{' '}
+                          <span className="text-texto">{p.nombre}:</span>{' '}
                           {textoEleccion(elecciones[p.indice], p.tipo, config)}
                         </li>
                       ))}
                     </ul>
                     <button
                       onClick={() => setPaso(0)}
-                      className="shrink-0 text-xs text-salviaOscuro underline"
+                      className="shrink-0 text-xs text-accion underline"
                     >
                       Cambiar
                     </button>
@@ -432,7 +474,7 @@ export default function Rsvp() {
                 <div className="mt-6">
                   <label htmlFor="restricciones" className="mb-2 block text-sm font-medium">
                     ¿Alguna restricción alimenticia?{' '}
-                    <span className="font-normal text-carbon/50">(opcional)</span>
+                    <span className="font-normal text-texto/60">(opcional)</span>
                   </label>
                   <textarea
                     id="restricciones"
@@ -450,7 +492,7 @@ export default function Rsvp() {
                 <div className="mt-4">
                   <label htmlFor="mensaje" className="mb-2 block text-sm font-medium">
                     Un mensaje para los novios{' '}
-                    <span className="font-normal text-carbon/50">(opcional)</span>
+                    <span className="font-normal text-texto/60">(opcional)</span>
                   </label>
                   <textarea
                     id="mensaje"
@@ -463,15 +505,18 @@ export default function Rsvp() {
                 </div>
               )}
 
-              {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+              {error && <p className="mt-4 text-sm text-alerta">{error}</p>}
 
-              <button
-                onClick={guardar}
-                disabled={!respuesta || guardando}
-                className="btn-primario mt-6 w-full"
-              >
-                {guardando ? 'Guardando…' : 'Enviar confirmación'}
-              </button>
+              {/*
+                El botón de enviar no aparece hasta que hay respuesta. Antes se
+                veía apagado desde el principio, y un botón deshabilitado no
+                explica qué falta para poder pulsarlo.
+              */}
+              {respuesta && (
+                <button onClick={guardar} disabled={guardando} className="btn-primario mt-6 w-full">
+                  {guardando ? 'Guardando…' : 'Enviar confirmación'}
+                </button>
+              )}
             </>
           )}
         </div>

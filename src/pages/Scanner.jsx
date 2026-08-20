@@ -16,10 +16,10 @@ const ENFRIAMIENTO_MS = 3000
 const MAX_RESULTADOS = 12
 
 const ESTILOS = {
-  valido: { caja: 'bg-emerald-600 text-white', titulo: '✓ Adelante' },
-  yaUsado: { caja: 'bg-amber-500 text-white', titulo: '⚠ Ya registrado' },
-  noConfirmo: { caja: 'bg-red-600 text-white', titulo: '✕ No confirmó' },
-  noEncontrado: { caja: 'bg-red-600 text-white', titulo: '✕ Código no válido' },
+  valido: { caja: 'bg-confirmado text-sobreColor', titulo: '✓ Adelante' },
+  yaUsado: { caja: 'bg-espera text-sobreColor', titulo: '⚠ Ya registrado' },
+  noConfirmo: { caja: 'bg-alerta text-sobreColor', titulo: '✕ No confirmó' },
+  noEncontrado: { caja: 'bg-alerta text-sobreColor', titulo: '✕ Código no válido' },
 }
 
 export default function Scanner() {
@@ -248,21 +248,21 @@ export default function Scanner() {
         <h1 className="font-titulo text-2xl">Acceso</h1>
         {/* La cuenta de la puerta no tiene panel: le ofrecemos salir. */}
         {esEscaner(usuario) ? (
-          <button onClick={salir} className="text-sm text-carbon/50 underline">
+          <button onClick={salir} className="text-sm text-texto/70 underline">
             Salir
           </button>
         ) : (
-          <Link to="/admin" className="text-sm text-salviaOscuro underline">
+          <Link to="/admin" className="text-sm text-accion underline">
             Volver al panel
           </Link>
         )}
       </div>
 
       <div className="tarjeta mb-4 flex items-center justify-between p-4">
-        <span className="text-sm text-carbon/60">Han entrado</span>
-        <span className="font-titulo text-3xl tabular-nums">
+        <span className="text-sm text-texto/60">Han entrado</span>
+        <span className="font-dato text-3xl tabular-nums">
           {conteo.dentro}
-          <span className="text-lg text-carbon/40"> / {conteo.esperados}</span>
+          <span className="text-lg text-texto/60"> / {conteo.esperados}</span>
         </span>
       </div>
 
@@ -281,8 +281,8 @@ export default function Scanner() {
             aria-pressed={modo === op.id}
             className={`btn border py-2 text-sm ${
               modo === op.id
-                ? 'border-salvia bg-salvia text-white'
-                : 'border-arena bg-white text-carbon'
+                ? 'border-accion bg-accion text-sobreColor'
+                : 'border-linea bg-superficie text-texto'
             }`}
           >
             {op.texto}
@@ -293,7 +293,7 @@ export default function Scanner() {
       {modo === 'camara' ? (
         <div>
           {errorCamara && (
-            <p className="mb-3 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+            <p className="mb-3 rounded-xl bg-alerta/10 px-4 py-3 text-sm text-alerta">
               {errorCamara} <strong>Mientras tanto, usa “Buscar por nombre”.</strong>
             </p>
           )}
@@ -304,7 +304,7 @@ export default function Scanner() {
           */}
           <div
             id={ID_LECTOR}
-            className="overflow-hidden rounded-2xl border border-arena bg-black"
+            className="overflow-hidden rounded-2xl border border-linea bg-black"
           />
         </div>
       ) : (
@@ -319,7 +319,7 @@ export default function Scanner() {
             aria-label="Buscar invitado por nombre"
           />
 
-          <p className="mt-2 text-xs text-carbon/50">
+          <p className="mt-2 text-xs text-texto/50">
             Para quien llegue sin su código: sin celular, sin batería o sin el mensaje. Toca su
             nombre para registrar el acceso.
           </p>
@@ -332,22 +332,22 @@ export default function Scanner() {
                 <button
                   key={i.id}
                   onClick={() => alElegirDeLaLista(i)}
-                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-arena bg-white px-4 py-3 text-left hover:bg-arena/40"
+                  className="flex w-full items-center justify-between gap-3 rounded-xl border border-linea bg-superficie px-4 py-3 text-left hover:bg-reposo"
                 >
                   <span className="min-w-0">
                     <span className="block truncate font-medium">{i.nombre}</span>
-                    <span className="text-xs text-carbon/50">
+                    <span className="text-xs text-texto/50">
                       {personas > 1 ? `${personas} personas` : '1 persona'}
                       {i.mesa && ` · Mesa ${i.mesa}`}
                     </span>
                   </span>
                   <span className="shrink-0 text-xs">
                     {i.entradaRegistrada ? (
-                      <span className="text-amber-600">Ya entró</span>
+                      <span className="text-espera">Ya entró</span>
                     ) : i.confirmacion === 'Si' ? (
-                      <span className="text-salviaOscuro">Confirmado</span>
+                      <span className="text-accion">Confirmado</span>
                     ) : (
-                      <span className="text-red-600">{i.confirmacion || 'Pendiente'}</span>
+                      <span className="text-alerta">{i.confirmacion || 'Pendiente'}</span>
                     )}
                   </span>
                   {puedeEntrar && <span className="sr-only">Registrar acceso</span>}
@@ -356,7 +356,7 @@ export default function Scanner() {
             })}
 
             {normalizar(busqueda).length >= 2 && resultadosBusqueda.length === 0 && (
-              <p className="py-6 text-center text-sm text-carbon/50">
+              <p className="py-6 text-center text-sm text-texto/50">
                 Nadie coincide con “{busqueda}”.
               </p>
             )}
@@ -383,7 +383,10 @@ export default function Scanner() {
           {/* Lo más importante para quien está en la puerta: cuántos pasan. */}
           {resultado.personas > 1 && (
             <div className="mt-3 rounded-xl bg-white/20 px-4 py-3">
-              <p className="font-titulo text-3xl tabular-nums">{resultado.personas} personas</p>
+              {/* Solo el dígito va en monoespaciada; la palabra desentonaría. */}
+              <p className="text-3xl">
+                <span className="font-dato tabular-nums">{resultado.personas}</span> personas
+              </p>
               {resultado.acompanantes && (
                 <p className="mt-1 text-sm opacity-90">Titular + {resultado.acompanantes}</p>
               )}
@@ -426,7 +429,7 @@ export default function Scanner() {
       )}
 
       {modo === 'camara' && (
-        <p className="mt-6 text-center text-xs text-carbon/50">
+        <p className="mt-6 text-center text-xs text-texto/50">
           Apunta al código QR del invitado. El resultado aparece automáticamente.
         </p>
       )}

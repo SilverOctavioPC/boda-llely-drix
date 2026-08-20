@@ -14,7 +14,7 @@ function NoEncontrado() {
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col items-center justify-center px-6 text-center">
       <h1 className="font-titulo text-3xl">{EVENTO.novios}</h1>
-      <p className="mt-4 text-carbon/70">
+      <p className="mt-4 text-texto/70">
         Esta página no existe. Si buscas confirmar tu asistencia, abre el link que te enviamos por
         WhatsApp.
       </p>

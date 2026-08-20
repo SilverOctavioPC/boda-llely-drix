@@ -49,11 +49,11 @@ export default function Login() {
       <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
         <div className="mb-8 text-center">
           <h1 className="font-titulo text-3xl">{EVENTO.novios}</h1>
-          <p className="mt-2 text-sm text-carbon/60">Ya hay una sesión abierta</p>
+          <p className="mt-2 text-sm text-texto/60">Ya hay una sesión abierta</p>
         </div>
 
         <div className="tarjeta text-center">
-          <p className="text-sm text-carbon/60">Estás dentro como</p>
+          <p className="text-sm text-texto/60">Estás dentro como</p>
           <p className="mt-1 break-all font-medium">{usuario.email}</p>
 
           <button
@@ -96,7 +96,7 @@ export default function Login() {
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center px-6">
       <div className="mb-8 text-center">
         <h1 className="font-titulo text-3xl">{EVENTO.novios}</h1>
-        <p className="mt-2 text-sm text-carbon/60">Panel de novios</p>
+        <p className="mt-2 text-sm text-texto/60">Panel de novios</p>
       </div>
 
       <form onSubmit={onSubmit} className="tarjeta">
@@ -126,7 +126,7 @@ export default function Login() {
           className="campo"
         />
 
-        {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-4 text-sm text-alerta">{error}</p>}
 
         <button type="submit" disabled={enviando} className="btn-primario mt-6 w-full">
           {enviando ? 'Entrando…' : 'Entrar'}

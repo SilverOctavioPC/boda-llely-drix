@@ -46,7 +46,7 @@ export default function Modal({ abierto, onCerrar, titulo, children }) {
         aria-modal="true"
         aria-label={titulo}
         onClick={(e) => e.stopPropagation()}
-        className="max-h-[90vh] w-full overflow-y-auto rounded-t-2xl bg-white p-6 shadow-xl outline-none sm:max-w-md sm:rounded-2xl"
+        className="max-h-[90vh] w-full overflow-y-auto rounded-t-2xl bg-superficie p-6 shadow-xl outline-none sm:max-w-md sm:rounded-2xl"
       >
         <div className="mb-5 flex items-start justify-between gap-4">
           <h2 className="font-titulo text-2xl">{titulo}</h2>
@@ -54,7 +54,7 @@ export default function Modal({ abierto, onCerrar, titulo, children }) {
           <button
             onClick={onCerrar}
             aria-label="Cerrar"
-            className="-mr-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-3xl leading-none text-carbon/40 hover:bg-arena hover:text-carbon"
+            className="-mr-2 -mt-2 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-3xl leading-none text-texto/40 hover:bg-reposo hover:text-texto"
           >
             ×
           </button>

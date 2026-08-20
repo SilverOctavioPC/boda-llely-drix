@@ -16,9 +16,9 @@ function EditorLista({ titulo, ayuda, opciones, onCambio }) {
   }
 
   return (
-    <fieldset className="rounded-2xl border border-arena p-4">
+    <fieldset className="rounded-2xl border border-linea p-4">
       <legend className="px-2 text-sm font-medium">{titulo}</legend>
-      {ayuda && <p className="mb-3 text-xs text-carbon/50">{ayuda}</p>}
+      {ayuda && <p className="mb-3 text-xs text-texto/50">{ayuda}</p>}
 
       <div className="space-y-2">
         {opciones.map((o, i) => (
@@ -34,7 +34,7 @@ function EditorLista({ titulo, ayuda, opciones, onCambio }) {
             <button
               type="button"
               onClick={() => quitar(o.id)}
-              className="shrink-0 rounded-xl px-3 py-2 text-sm text-red-600 hover:bg-red-50"
+              className="shrink-0 rounded-xl px-3 py-2 text-sm text-alerta hover:bg-alerta/10"
               aria-label={`Quitar ${o.nombre || `opción ${i + 1}`}`}
             >
               Quitar
@@ -43,7 +43,7 @@ function EditorLista({ titulo, ayuda, opciones, onCambio }) {
         ))}
 
         {opciones.length === 0 && (
-          <p className="py-2 text-sm text-carbon/40">Sin opciones todavía.</p>
+          <p className="py-2 text-sm text-texto/40">Sin opciones todavía.</p>
         )}
       </div>
 
@@ -96,7 +96,7 @@ export default function ConfigMenu({ config, onGuardar, onCancelar, guardando })
 
   return (
     <form onSubmit={enviar}>
-      <p className="mb-4 text-sm text-carbon/60">
+      <p className="mb-4 text-sm text-texto/60">
         Lo que configures aquí es lo que verán los invitados al confirmar. Si dejas una lista vacía,
         esa pregunta no se les hace.
       </p>
@@ -123,9 +123,9 @@ export default function ConfigMenu({ config, onGuardar, onCancelar, guardando })
         ))}
       </div>
 
-      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-4 text-sm text-alerta">{error}</p>}
 
-      <p className="mt-4 rounded-xl bg-arena/50 px-4 py-3 text-xs text-carbon/60">
+      <p className="mt-4 rounded-xl bg-reposo px-4 py-3 text-xs text-texto/60">
         Si borras una opción que alguien ya había elegido, su elección queda marcada como{' '}
         <em>“opción eliminada”</em> en el panel. Tendrás que preguntarle de nuevo.
       </p>

@@ -15,8 +15,8 @@ function Opciones({ opciones, valor, onCambio, etiquetaGrupo }) {
             onClick={() => onCambio(o.id)}
             className={`rounded-xl border px-4 py-3 text-left text-sm transition active:scale-[.99] ${
               elegida
-                ? 'border-salvia bg-salvia text-white'
-                : 'border-arena bg-white text-carbon hover:bg-arena/40'
+                ? 'border-accion bg-accion text-sobreColor'
+                : 'border-linea bg-superficie text-texto hover:bg-reposo'
             }`}
           >
             {o.nombre}
@@ -44,7 +44,7 @@ export function MenuDePersona({
   if (cursos.length === 0) return null
 
   const marco = conMarco
-    ? `rounded-2xl border p-4 ${incompleta ? 'border-red-400 bg-red-50/50' : 'border-arena'}`
+    ? `rounded-2xl border p-4 ${incompleta ? 'border-alerta/50 bg-alerta/5' : 'border-linea'}`
     : ''
 
   return (
@@ -52,19 +52,16 @@ export function MenuDePersona({
       {mostrarNombre && (
         <p className="font-medium">
           {persona.nombre}
-          {persona.tipo === 'nino' && (
-            <span className="ml-2 rounded-full bg-oro/15 px-2 py-0.5 text-xs text-oro">
-              menú infantil
-            </span>
-          )}
+          {/* Neutra: es una categoría, no algo pendiente de resolver. */}
+          {persona.tipo === 'nino' && <span className="pastilla-neutra ml-2">menú infantil</span>}
         </p>
       )}
 
       {cursos.map((curso) => (
         <div key={curso.clave} className={mostrarNombre ? 'mt-4' : 'mt-4 first:mt-0'}>
-          <p className="mb-2 text-sm text-carbon/60">
+          <p className="mb-2 text-sm text-texto/60">
             {curso.etiqueta}
-            {!eleccion[curso.clave] && <span className="ml-1 text-red-600">*</span>}
+            {!eleccion[curso.clave] && <span className="ml-1 text-alerta">*</span>}
           </p>
           <Opciones
             opciones={opcionesPara(curso.clave, persona.tipo, config)}
@@ -91,9 +88,9 @@ export default function SelectorMenu({ invitado, config, elecciones, onCambio, i
         // Los bebés no comen ni beben del banquete.
         if (persona.tipo === 'bebe') {
           return (
-            <div key={persona.indice} className="rounded-2xl border border-arena p-4">
+            <div key={persona.indice} className="rounded-2xl border border-linea p-4">
               <p className="font-medium">{persona.nombre}</p>
-              <p className="mt-1 text-sm text-carbon/50">Al ser bebé, no necesita elegir menú.</p>
+              <p className="mt-1 text-sm text-texto/50">Al ser bebé, no necesita elegir menú.</p>
             </div>
           )
         }

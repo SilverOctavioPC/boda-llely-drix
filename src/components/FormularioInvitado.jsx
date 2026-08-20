@@ -11,7 +11,7 @@ const MAX_ACOMPANANTES = 15
 /** Contador con − y + , cómodo de tocar en el celular. */
 function Contador({ id, valor, onCambio, min = 0, max = MAX_ACOMPANANTES }) {
   const boton =
-    'flex h-11 w-11 items-center justify-center rounded-xl border border-arena ' +
+    'flex h-11 w-11 items-center justify-center rounded-xl border border-linea ' +
     'text-xl leading-none transition active:scale-95 disabled:opacity-30'
 
   return (
@@ -26,7 +26,12 @@ function Contador({ id, valor, onCambio, min = 0, max = MAX_ACOMPANANTES }) {
       >
         −
       </button>
-      <output id={id} className="w-10 text-center font-titulo text-2xl tabular-nums">
+      {/*
+        `font-dato` y no `font-titulo`: es una cifra, y las cifras van en
+        monoespaciada tabular. Con `tabular-nums` el 1 ocupa lo mismo que el 8,
+        así que el número no se descoloca al pasar de 9 a 10.
+      */}
+      <output id={id} className="w-10 text-center font-dato text-xl tabular-nums">
         {valor}
       </output>
       <button
@@ -123,7 +128,7 @@ export default function FormularioInvitado({ inicial, onGuardar, onCancelar, gua
   return (
     <form onSubmit={enviar}>
       <label htmlFor="f-nombre" className="mb-2 block text-sm font-medium">
-        Nombre <span className="text-red-600">*</span>
+        Nombre <span className="text-alerta">*</span>
       </label>
       <input
         id="f-nombre"
@@ -192,8 +197,8 @@ export default function FormularioInvitado({ inicial, onGuardar, onCancelar, gua
                 aria-pressed={categoria === c}
                 className={`btn border py-2 text-sm ${
                   categoria === c
-                    ? 'border-salvia bg-salvia text-white'
-                    : 'border-arena bg-white text-carbon'
+                    ? 'border-accion bg-accion text-sobreColor'
+                    : 'border-linea bg-superficie text-texto'
                 }`}
               >
                 {c}
@@ -208,7 +213,7 @@ export default function FormularioInvitado({ inicial, onGuardar, onCancelar, gua
         {editando && categoria !== 'Adulto' && (
           <div>
             <label htmlFor="f-edad" className="mb-2 block text-sm font-medium">
-              Edad <span className="font-normal text-carbon/50">(opcional)</span>
+              Edad <span className="font-normal text-texto/50">(opcional)</span>
             </label>
             <input
               id="f-edad"
@@ -223,7 +228,7 @@ export default function FormularioInvitado({ inicial, onGuardar, onCancelar, gua
 
         <div>
           <label htmlFor="f-mesa" className="mb-2 block text-sm font-medium">
-            Mesa <span className="font-normal text-carbon/50">(opcional)</span>
+            Mesa <span className="font-normal text-texto/50">(opcional)</span>
           </label>
           <input
             id="f-mesa"
@@ -237,7 +242,7 @@ export default function FormularioInvitado({ inicial, onGuardar, onCancelar, gua
       </div>
 
       {/* ---------- Acompañantes ---------- */}
-      <fieldset className="mt-6 rounded-2xl border border-arena p-4">
+      <fieldset className="mt-6 rounded-2xl border border-linea p-4">
         <legend className="px-2 text-sm font-medium">Acompañantes</legend>
 
         <div className="flex items-center justify-between gap-4">
@@ -250,9 +255,9 @@ export default function FormularioInvitado({ inicial, onGuardar, onCancelar, gua
         {adultos.length > 0 && (
           <div className="mt-3 space-y-3">
             {adultos.map((p, i) => (
-              <div key={i} className="rounded-xl bg-arena/30 p-3">
-                <p className="mb-2 text-xs font-medium text-carbon/60">
-                  Adulto {i + 1} <span className="font-normal text-carbon/40">(opcional)</span>
+              <div key={i} className="rounded-xl bg-reposo p-3">
+                <p className="mb-2 text-xs font-medium text-texto/60">
+                  Adulto {i + 1} <span className="font-normal text-texto/40">(opcional)</span>
                 </p>
                 <input
                   value={p.nombre || ''}
@@ -280,7 +285,7 @@ export default function FormularioInvitado({ inicial, onGuardar, onCancelar, gua
           </div>
         )}
 
-        <div className="mt-4 flex items-center justify-between gap-4 border-t border-arena pt-4">
+        <div className="mt-4 flex items-center justify-between gap-4 border-t border-linea pt-4">
           <label htmlFor="c-ninos" className="text-sm">
             Niños
           </label>
@@ -290,9 +295,9 @@ export default function FormularioInvitado({ inicial, onGuardar, onCancelar, gua
         {ninos.length > 0 && (
           <div className="mt-3 space-y-3">
             {ninos.map((p, i) => (
-              <div key={i} className="rounded-xl bg-arena/30 p-3">
-                <p className="mb-2 text-xs font-medium text-carbon/60">
-                  Niño {i + 1} <span className="font-normal text-carbon/40">(opcional)</span>
+              <div key={i} className="rounded-xl bg-reposo p-3">
+                <p className="mb-2 text-xs font-medium text-texto/60">
+                  Niño {i + 1} <span className="font-normal text-texto/40">(opcional)</span>
                 </p>
                 <input
                   value={p.nombre || ''}
@@ -330,7 +335,7 @@ export default function FormularioInvitado({ inicial, onGuardar, onCancelar, gua
           </div>
         )}
 
-        <p className="mt-4 rounded-xl bg-arena/50 px-3 py-2 text-center text-sm">
+        <p className="mt-4 rounded-xl bg-reposo px-3 py-2 text-center text-sm">
           Este grupo entra con <strong>{total}</strong> {total === 1 ? 'persona' : 'personas'} y{' '}
           <strong>un solo QR</strong>.
         </p>
@@ -352,12 +357,12 @@ export default function FormularioInvitado({ inicial, onGuardar, onCancelar, gua
             </option>
           ))}
         </select>
-        <p className="mt-2 text-xs text-carbon/50">
+        <p className="mt-2 text-xs text-texto/50">
           Útil cuando alguien te confirma por teléfono o en persona y no va a abrir su link.
         </p>
       </div>
 
-      {error && <p className="mt-4 text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-4 text-sm text-alerta">{error}</p>}
 
       <div className="mt-6 flex gap-3">
         <button type="button" onClick={onCancelar} className="btn-secundario flex-1">

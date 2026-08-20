@@ -66,7 +66,12 @@ Lo que lo sostiene:
 
 Importar `auth.js`, `Admin.jsx` o `Scanner.jsx` desde código que alcance la ruta
 `/rsvp/:id` duplica el peso de la página pública. Antes de partirlo pesaba 272 kB gzip;
-ahora 144 kB.
+ahora 148 kB.
+
+**Hay un test que lo vigila**: [src/lib/bundles.test.js](src/lib/bundles.test.js) recorre
+el grafo de imports estáticos desde `main.jsx` y falla si alcanza algo de la zona
+privada, señalando la cadena culpable. Los `import()` dinámicos de `lazy()` no cuentan:
+son justamente el mecanismo del corte.
 
 ### Modelo de datos
 
@@ -107,12 +112,38 @@ para que dos celulares escaneando a la vez no descuadren el conteo.
 
 ### Estilos
 
-Tailwind con paleta propia en [tailwind.config.js](tailwind.config.js): `crema`, `arena`,
-`salvia`, `salviaOscuro`, `oro`, `carbon`, y `font-titulo`. Usa esos tokens, no hex
-sueltos.
+**Los colores se nombran por su USO, no por su color.** No existe `bg-salvia`: existe
+`bg-accion`. Así, el día que la paleta cambie, el código no queda diciendo «salvia»
+sobre un botón azul.
+
+Van en dos capas dentro de [src/index.css](src/index.css):
+
+| Capa             | Ejemplo                                | Para qué                                                                            |
+| ---------------- | -------------------------------------- | ----------------------------------------------------------------------------------- |
+| **1 primitivas** | `--salvia-oscura: 95 109 83`           | Los colores de la marca. **Recolorear el sitio entero es editar solo este bloque.** |
+| **2 semánticas** | `--color-accion: var(--salvia-oscura)` | Lo que usa el resto del proyecto                                                    |
+
+[tailwind.config.js](tailwind.config.js) expone **solo la capa 2**: `fondo`, `superficie`,
+`reposo`, `linea`, `lineaFuerte`, `texto`, `accion`, `accionFuerte`, `accionViva`,
+`sobreColor`, `filete`, `confirmado`, `espera`, `alerta`, `alertaFuerte`. Más
+`font-titulo` (Palatino) y `font-dato` (monoespaciada tabular, para cifras).
+
+Tres reglas que sostienen esto:
+
+- **Los valores van en canales RGB sueltos** (`95 109 83`), nunca en hex. Es lo que
+  necesita `rgb(var(--x) / <alpha-value>)` para que sigan funcionando los modificadores
+  de opacidad. Con un hex, `text-texto/50` deja de aplicar el alfa **sin avisar**, y hay
+  unos sesenta sitios que dependen de ello.
+- **Los tonos intermedios de texto salen del alfa**: `text-texto/60`, no un token nuevo.
+- **El oro (`filete`) solo hace líneas de 1px.** Nunca texto ni relleno: tiene 2.9:1
+  contra el blanco. Antes era `text-oro` y marcaba «sin responder»; ese trabajo ahora es
+  de `espera`. Un color que significa algo no puede además decorar.
 
 Las clases compartidas viven en [src/index.css](src/index.css): `.btn`, `.btn-primario`,
-`.btn-secundario`, `.tarjeta`, `.campo`. Dos detalles que hay que respetar:
+`.btn-secundario`, `.tarjeta`, `.campo`, `.filete` y las pastillas de estado
+(`.pastilla-confirmado`, `.pastilla-espera`, `.pastilla-alerta`, `.pastilla-neutra`).
+Las pastillas llevan un punto además del color: en la puerta del salón, con el celular
+al sol, la forma se ve antes que el tono. Dos detalles más que hay que respetar:
 
 - **`.btn` lleva `min-h-11` (44px)**, el mínimo para tocar con el dedo sin fallar. Varios
   sitios rebajan el alto con `py-2 text-sm` para que quepa el texto; el mínimo aguanta por
@@ -223,5 +254,7 @@ cuenta de servicio da acceso total y se salta las reglas.
 ## Documentación del proyecto
 
 - [PENDIENTES.md](docs/PENDIENTES.md) — qué falta y en qué orden. **Empieza por aquí.**
+- [ARQUITECTURA.md](docs/ARQUITECTURA.md) — cómo está construido el frontend y por qué:
+  capas, rutas, corte de bundles, flujo de datos y las decisiones que parecen errores.
 - [GUIA.md](docs/GUIA.md) — uso diario, las dos cuentas, problemas comunes.
 - [README.md](README.md) — instalación desde cero y modelo de datos.

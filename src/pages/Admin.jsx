@@ -43,31 +43,34 @@ import {
 const linkDe = (id) => `${window.location.origin}/rsvp/${id}`
 
 function Metrica({ etiqueta, valor, tono = 'neutro' }) {
+  // Los tonos se nombran por lo que significan, igual que los colores.
   const tonos = {
-    neutro: 'text-carbon',
-    verde: 'text-salviaOscuro',
-    rojo: 'text-red-600',
-    ambar: 'text-oro',
+    neutro: 'text-texto',
+    confirmado: 'text-confirmado',
+    espera: 'text-espera',
+    alerta: 'text-alerta',
   }
   return (
     <div className="tarjeta p-4 text-center">
-      <p className={`font-titulo text-4xl tabular-nums ${tonos[tono]}`}>{valor}</p>
-      <p className="mt-1 text-xs uppercase tracking-wide text-carbon/50">{etiqueta}</p>
+      <p className={`font-dato text-4xl tabular-nums ${tonos[tono]}`}>{valor}</p>
+      <p className="mt-1 text-xs uppercase tracking-wide text-texto/50">{etiqueta}</p>
     </div>
   )
 }
 
+/*
+  El ámbar es para lo que hay que perseguir, no para las malas noticias: quien
+  avisó de que no puede venir ya hizo su parte y se queda en neutro. Antes iba
+  en rojo, y el rojo tiraba de la vista hacia una fila sobre la que no hay nada
+  que hacer.
+*/
 function Etiqueta({ children, tono }) {
   const tonos = {
-    Si: 'bg-salvia/15 text-salviaOscuro',
-    No: 'bg-red-100 text-red-700',
-    Pendiente: 'bg-arena text-carbon/60',
+    Si: 'pastilla-confirmado',
+    No: 'pastilla-neutra',
+    Pendiente: 'pastilla-espera',
   }
-  return (
-    <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${tonos[tono]}`}>
-      {children}
-    </span>
-  )
+  return <span className={tonos[tono]}>{children}</span>
 }
 
 /** Campo de solo lectura con botón de copiar. */
@@ -427,7 +430,7 @@ export default function Admin() {
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="font-titulo text-3xl">Panel de novios</h1>
-          <p className="text-sm text-carbon/50">{usuario?.email}</p>
+          <p className="text-sm text-texto/50">{usuario?.email}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button onClick={() => setCreando(true)} className="btn-primario">
@@ -445,19 +448,21 @@ export default function Admin() {
         </div>
       </div>
 
-      {error && <p className="mb-6 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+      {error && (
+        <p className="mb-6 rounded-xl bg-alerta/10 px-4 py-3 text-sm text-alerta">{error}</p>
+      )}
 
       <section className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <Metrica etiqueta="Personas" valor={resumen.personas} />
-        <Metrica etiqueta="Asistirán" valor={resumen.si} tono="verde" />
-        <Metrica etiqueta="No podrán" valor={resumen.no} tono="rojo" />
-        <Metrica etiqueta="Sin responder" valor={resumen.pendiente} tono="ambar" />
+        <Metrica etiqueta="Asistirán" valor={resumen.si} tono="confirmado" />
+        <Metrica etiqueta="No podrán" valor={resumen.no} tono="neutro" />
+        <Metrica etiqueta="Sin responder" valor={resumen.pendiente} tono="espera" />
         <Metrica etiqueta="Ya entraron" valor={resumen.entradas} />
       </section>
 
       {/* Lo que le pasas al banquete: solo cuenta a quienes confirmaron. */}
-      <section className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-2xl border border-arena bg-white px-5 py-4 text-sm">
-        <span className="text-carbon/50">De los que asistirán:</span>
+      <section className="mt-3 flex flex-wrap items-center gap-x-6 gap-y-2 rounded-2xl border border-linea bg-superficie px-5 py-4 text-sm">
+        <span className="text-texto/50">De los que asistirán:</span>
         <span>
           <strong className="tabular-nums">{resumen.adultos}</strong> adultos
         </span>
@@ -467,14 +472,14 @@ export default function Admin() {
         <span>
           <strong className="tabular-nums">{resumen.bebes}</strong> bebés
         </span>
-        <span className="ml-auto text-xs text-carbon/40">
+        <span className="ml-auto text-xs text-texto/40">
           Todo en personas. {resumen.grupos} grupos con link propio.
         </span>
       </section>
 
       {/* Conteo de platos y bebidas, solo de quienes ya confirmaron. */}
       {hayMenuConfigurado(config) && (
-        <section className="mt-3 rounded-2xl border border-arena bg-white px-5 py-4">
+        <section className="mt-3 rounded-2xl border border-linea bg-superficie px-5 py-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-sm font-medium">Menú elegido</h2>
             {(menu.faltantes.entrada > 0 ||
@@ -482,7 +487,7 @@ export default function Admin() {
               menu.faltantes.bebida > 0) && (
               <button
                 onClick={() => setFiltroMenu(filtroMenu === 'faltan' ? 'Todos' : 'faltan')}
-                className="text-xs text-oro underline"
+                className="text-xs text-espera underline"
               >
                 Hay elecciones pendientes — {filtroMenu === 'faltan' ? 'ver todos' : 'ver quiénes'}
               </button>
@@ -492,30 +497,32 @@ export default function Admin() {
           <div className="mt-3 grid gap-4 sm:grid-cols-3">
             {CURSOS.map((curso) => (
               <div key={curso.clave}>
-                <p className="mb-1 text-xs uppercase tracking-wide text-carbon/40">
+                <p className="mb-1 text-xs uppercase tracking-wide text-texto/40">
                   {curso.etiqueta}
                 </p>
                 {menu[curso.clave].length === 0 ? (
-                  <p className="text-sm text-carbon/40">Nadie ha elegido todavía.</p>
+                  <p className="text-sm text-texto/40">Nadie ha elegido todavía.</p>
                 ) : (
                   <ul className="space-y-1 text-sm">
                     {menu[curso.clave].map((o) => (
                       <li key={o.id} className="flex justify-between gap-4">
-                        <span className="text-carbon/70">{o.nombre}</span>
+                        <span className="text-texto/70">{o.nombre}</span>
                         <strong className="tabular-nums">{o.n}</strong>
                       </li>
                     ))}
                   </ul>
                 )}
                 {menu.faltantes[curso.clave] > 0 && (
-                  <p className="mt-1 text-xs text-oro">{menu.faltantes[curso.clave]} sin elegir</p>
+                  <p className="mt-1 text-xs text-espera">
+                    {menu.faltantes[curso.clave]} sin elegir
+                  </p>
                 )}
               </div>
             ))}
           </div>
 
           {menu.bebes > 0 && (
-            <p className="mt-3 text-xs text-carbon/40">
+            <p className="mt-3 text-xs text-texto/40">
               {menu.bebes} bebé(s) no eligen menú y no entran en este conteo.
             </p>
           )}
@@ -567,16 +574,16 @@ export default function Admin() {
         </button>
       </section>
 
-      <p className="mt-4 text-sm text-carbon/50">
+      <p className="mt-4 text-sm text-texto/50">
         {filtrados.length === 0
           ? `0 de ${invitados.length}`
           : `Mostrando ${desde + 1}–${Math.min(desde + POR_PAGINA, filtrados.length)} de ${filtrados.length}`}
         {filtrados.length !== invitados.length && ` (${invitados.length} en total)`}
       </p>
 
-      <section className="mt-3 overflow-x-auto rounded-2xl border border-arena bg-white">
+      <section className="mt-3 overflow-x-auto rounded-2xl border border-linea bg-superficie">
         <table className="w-full min-w-[820px] text-left text-sm">
-          <thead className="border-b border-arena text-xs uppercase tracking-wide text-carbon/50">
+          <thead className="border-b border-linea text-xs uppercase tracking-wide text-texto/50">
             <tr>
               <th className="px-4 py-3 font-medium">Nombre</th>
               <th className="px-4 py-3 font-medium">Lista</th>
@@ -593,27 +600,30 @@ export default function Admin() {
           </thead>
           <tbody>
             {paginados.map((i) => (
-              <tr key={i.id} className="border-b border-arena/60 last:border-0">
+              <tr key={i.id} className="border-b border-linea last:border-0">
                 <td className="px-4 py-3">
                   <span className="font-medium">{i.nombre}</span>
-                  {i.edad && <span className="ml-2 text-xs text-carbon/50">{i.edad}</span>}
+                  {i.edad && <span className="ml-2 text-xs text-texto/50">{i.edad}</span>}
+                  {/* Informativo, no un estado: quién viene con quién. */}
                   {totalPersonas(i) > 1 && (
-                    <span className="ml-2 rounded-full bg-salvia/15 px-2 py-0.5 text-xs font-medium text-salviaOscuro">
-                      +{resumenAcompanantes(i)}
-                    </span>
+                    <span className="pastilla-neutra ml-2">+{resumenAcompanantes(i)}</span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-carbon/60">{i.grupo}</td>
-                <td className="px-4 py-3 text-carbon/60">
+                <td className="px-4 py-3 text-texto/60">{i.grupo}</td>
+                <td className="px-4 py-3 text-texto/60">
                   {(i.categoria || 'Adulto') !== 'Adulto' ? (
-                    <span className="rounded-full bg-oro/15 px-2.5 py-1 text-xs font-medium text-oro">
-                      {i.categoria}
-                    </span>
+                    /*
+                      Neutra, no ámbar. El ámbar significa "esto hay que
+                      perseguirlo" y en esta misma tabla lo lleva "Sin
+                      responder"; ser niño no es un pendiente. Dos ámbares con
+                      significados distintos en la misma fila se anulan.
+                    */
+                    <span className="pastilla-neutra">{i.categoria}</span>
                   ) : (
-                    <span className="text-carbon/40">Adulto</span>
+                    <span className="text-texto/40">Adulto</span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-carbon/60">{i.mesa || '—'}</td>
+                <td className="px-4 py-3 text-texto/60">{i.mesa || '—'}</td>
                 <td className="px-4 py-3">
                   <Etiqueta tono={i.confirmacion || 'Pendiente'}>
                     {i.confirmacion || 'Pendiente'}
@@ -622,7 +632,7 @@ export default function Admin() {
                 {hayMenuConfigurado(config) && (
                   <td className="max-w-[260px] px-4 py-3 text-xs">
                     {i.confirmacion !== 'Si' ? (
-                      <span className="text-carbon/30">—</span>
+                      <span className="text-texto/30">—</span>
                     ) : (
                       <ul className="space-y-0.5">
                         {personasDelGrupo(i)
@@ -631,11 +641,11 @@ export default function Admin() {
                             const elegido = resumenEleccion(i, p, config)
                             return (
                               <li key={p.indice}>
-                                <span className="text-carbon/50">{p.nombre}:</span>{' '}
+                                <span className="text-texto/50">{p.nombre}:</span>{' '}
                                 {elegido ? (
-                                  <span className="text-carbon/80">{elegido}</span>
+                                  <span className="text-texto/80">{elegido}</span>
                                 ) : (
-                                  <span className="text-oro">falta elegir</span>
+                                  <span className="text-espera">falta elegir</span>
                                 )}
                               </li>
                             )
@@ -644,12 +654,12 @@ export default function Admin() {
                     )}
                   </td>
                 )}
-                <td className="max-w-[200px] px-4 py-3 text-carbon/60">{i.restricciones || '—'}</td>
+                <td className="max-w-[200px] px-4 py-3 text-texto/60">{i.restricciones || '—'}</td>
                 <td className="px-4 py-3">
                   {i.entradaRegistrada ? (
-                    <span className="text-salviaOscuro">✓</span>
+                    <span className="text-accion">✓</span>
                   ) : (
-                    <span className="text-carbon/30">—</span>
+                    <span className="text-texto/30">—</span>
                   )}
                 </td>
                 {/*
@@ -662,7 +672,7 @@ export default function Admin() {
                   <div className="flex items-center justify-end gap-1">
                     <button
                       onClick={() => copiarLink(i.id)}
-                      className="min-h-9 rounded-lg px-3 py-2 text-xs text-salviaOscuro hover:bg-arena"
+                      className="min-h-11 rounded-lg px-3 py-2 text-xs text-accion hover:bg-reposo"
                       title="Copiar link de RSVP"
                     >
                       {copiadoId === i.id ? '✓ Copiado' : 'Link'}
@@ -670,7 +680,7 @@ export default function Admin() {
                     {hayMenuConfigurado(config) && (
                       <button
                         onClick={() => abrirMenuDe(i)}
-                        className="min-h-9 rounded-lg px-3 py-2 text-xs text-carbon/70 hover:bg-arena"
+                        className="min-h-11 rounded-lg px-3 py-2 text-xs text-texto/70 hover:bg-reposo"
                         title="Cambiar lo que va a comer"
                       >
                         Menú
@@ -678,7 +688,7 @@ export default function Admin() {
                     )}
                     <button
                       onClick={() => setEditando(i)}
-                      className="min-h-9 rounded-lg px-3 py-2 text-xs text-carbon/70 hover:bg-arena"
+                      className="min-h-11 rounded-lg px-3 py-2 text-xs text-texto/70 hover:bg-reposo"
                     >
                       Editar
                     </button>
@@ -687,7 +697,7 @@ export default function Admin() {
                         setBorrando(i)
                         setTextoBorrado('')
                       }}
-                      className="ml-3 min-h-9 rounded-lg px-3 py-2 text-xs text-red-600 hover:bg-red-50"
+                      className="ml-3 min-h-11 rounded-lg px-3 py-2 text-xs text-alerta hover:bg-alerta/10"
                     >
                       Borrar
                     </button>
@@ -699,7 +709,7 @@ export default function Admin() {
               <tr>
                 <td
                   colSpan={hayMenuConfigurado(config) ? 9 : 8}
-                  className="px-4 py-10 text-center text-carbon/50"
+                  className="px-4 py-10 text-center text-texto/50"
                 >
                   Ningún invitado coincide con esos filtros.
                 </td>
@@ -722,7 +732,7 @@ export default function Admin() {
             ← Anterior
           </button>
 
-          <span className="px-3 text-sm tabular-nums text-carbon/60">
+          <span className="px-3 text-sm tabular-nums text-texto/60">
             Página {paginaSegura} de {totalPaginas}
           </span>
 
@@ -743,12 +753,12 @@ export default function Admin() {
             .filter((i) => i.mensaje)
             .map((i) => (
               <blockquote key={i.id} className="tarjeta">
-                <p className="text-carbon/80">“{i.mensaje}”</p>
-                <footer className="mt-2 text-sm text-carbon/50">— {i.nombre}</footer>
+                <p className="text-texto/80">“{i.mensaje}”</p>
+                <footer className="mt-2 text-sm text-texto/50">— {i.nombre}</footer>
               </blockquote>
             ))}
           {invitados.filter((i) => i.mensaje).length === 0 && (
-            <p className="text-carbon/50">Todavía no hay mensajes.</p>
+            <p className="text-texto/50">Todavía no hay mensajes.</p>
           )}
         </div>
       </section>
@@ -776,7 +786,7 @@ export default function Admin() {
       >
         {menuDe && (
           <>
-            <p className="mb-4 text-sm text-carbon/60">
+            <p className="mb-4 text-sm text-texto/60">
               Cambia lo que va a comer cada quien. Útil cuando te avisan por teléfono. Aquí no hace
               falta completarlo todo.
             </p>
@@ -835,8 +845,8 @@ export default function Admin() {
         onCerrar={() => setRecienCreado(null)}
         titulo="Invitado agregado"
       >
-        <p className="text-carbon/70">
-          <span className="font-medium text-carbon">{recienCreado?.nombre}</span> ya está en la
+        <p className="text-texto/70">
+          <span className="font-medium text-texto">{recienCreado?.nombre}</span> ya está en la
           lista. Este es su link para mandarle por WhatsApp:
         </p>
         <div className="mt-4">{recienCreado && <CampoLink valor={linkDe(recienCreado.id)} />}</div>
@@ -850,13 +860,13 @@ export default function Admin() {
         onCerrar={() => setBorrando(null)}
         titulo="Borrar invitado"
       >
-        <p className="text-carbon/70">
-          Vas a borrar a <span className="font-medium text-carbon">{borrando?.nombre}</span>. Su
-          link de RSVP dejará de funcionar y no se puede deshacer.
+        <p className="text-texto/70">
+          Vas a borrar a <span className="font-medium text-texto">{borrando?.nombre}</span>. Su link
+          de RSVP dejará de funcionar y no se puede deshacer.
         </p>
 
         {borradoDelicado && (
-          <div className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <div className="mt-4 rounded-xl bg-espera/10 px-4 py-3 text-sm text-espera">
             <p className="font-medium">Cuidado</p>
             <p className="mt-1">
               {borrando?.entradaRegistrada
@@ -884,7 +894,7 @@ export default function Admin() {
           <button
             onClick={confirmarBorrado}
             disabled={!puedeBorrar || guardando}
-            className="btn flex-1 bg-red-600 text-white hover:bg-red-700"
+            className="btn flex-1 bg-alerta text-sobreColor hover:bg-alertaFuerte"
           >
             {guardando ? 'Borrando…' : 'Borrar'}
           </button>

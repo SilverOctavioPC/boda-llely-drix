@@ -11,7 +11,7 @@ function Progreso({ personas, actual, elecciones, config }) {
           <span
             key={p.indice}
             className={`h-2 rounded-full transition-all ${
-              i === actual ? 'w-6 bg-carbon' : completa ? 'w-2 bg-salvia' : 'w-2 bg-arena'
+              i === actual ? 'w-6 bg-texto' : completa ? 'w-2 bg-accion' : 'w-2 bg-reposo'
             }`}
           />
         )
@@ -47,25 +47,40 @@ export default function AsistenteMenu({
   // eligió algo y hay más gente a la que copiárselo.
   const puedeCopiar = paso === 0 && personas.length > 1 && CURSOS.some((c) => eleccion[c.clave])
 
+  /*
+    Quien viene solo no necesita saber por dónde va: "Persona 1 de 1", un punto
+    de progreso y su propio nombre —que ya vio dos líneas más arriba, en el
+    saludo— son tres adornos que no informan de nada. Sin ellos, el marco que
+    los envolvía tampoco hace falta y desaparece la tarjeta dentro de tarjeta.
+  */
+  const soloUno = personas.length === 1
+  // Excepción: si el único comensal es un niño, su nombre se queda para que se
+  // vea la etiqueta de menú infantil.
+  const mostrarNombre = !soloUno || persona.tipo === 'nino'
+
   return (
     <div>
-      <Progreso personas={personas} actual={paso} elecciones={elecciones} config={config} />
+      {!soloUno && (
+        <>
+          <Progreso personas={personas} actual={paso} elecciones={elecciones} config={config} />
+          <p className="mt-3 text-center text-xs uppercase tracking-wide text-texto/50">
+            Persona {paso + 1} de {personas.length}
+          </p>
+        </>
+      )}
 
-      <p className="mt-3 text-center text-xs uppercase tracking-wide text-carbon/40">
-        Persona {paso + 1} de {personas.length}
-      </p>
+      <div className={soloUno ? '' : 'mt-2 rounded-2xl border border-linea p-4'}>
+        {mostrarNombre && (
+          <p className="text-center font-titulo text-xl">
+            {persona.nombre}
+            {/* Neutra: es una categoría, no algo pendiente de resolver. */}
+            {persona.tipo === 'nino' && (
+              <span className="pastilla-neutra ml-2 align-middle">menú infantil</span>
+            )}
+          </p>
+        )}
 
-      <div className="mt-2 rounded-2xl border border-arena p-4">
-        <p className="text-center font-titulo text-xl">
-          {persona.nombre}
-          {persona.tipo === 'nino' && (
-            <span className="ml-2 align-middle rounded-full bg-oro/15 px-2 py-0.5 text-xs text-oro">
-              menú infantil
-            </span>
-          )}
-        </p>
-
-        <div className="mt-4">
+        <div className={mostrarNombre ? 'mt-4' : ''}>
           <MenuDePersona
             persona={persona}
             config={config}
@@ -87,7 +102,7 @@ export default function AsistenteMenu({
         )}
       </div>
 
-      {error && <p className="mt-3 text-center text-sm text-red-600">{error}</p>}
+      {error && <p className="mt-3 text-center text-sm text-alerta">{error}</p>}
 
       <div className="mt-4 flex gap-3">
         {paso > 0 && (
@@ -106,7 +121,7 @@ export default function AsistenteMenu({
       </div>
 
       {!completa && (
-        <p className="mt-2 text-center text-xs text-carbon/50">
+        <p className="mt-2 text-center text-xs text-texto/60">
           Elige{' '}
           {CURSOS.filter(
             (c) => opcionesPara(c.clave, persona.tipo, config).length > 0 && !eleccion[c.clave]
